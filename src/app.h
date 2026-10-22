@@ -37,6 +37,8 @@ struct PanelLayout {
     Rect calPrev, calNext, calTitle, calToday, calCancel;
     std::vector<RowHit> rows;
     std::vector<std::pair<int, Rect>> settingRows;
+    std::vector<std::pair<int, Rect>> settingValues;
+    std::vector<std::pair<int, Rect>> dropdownOptions;
     std::vector<std::pair<int64_t, Rect>> calendarDays;
 };
 
@@ -98,6 +100,8 @@ private:
         C_CAL_DAY,
         C_CAL_TODAY,
         C_CAL_CANCEL,
+        C_SETTING_OPTION,
+        C_SLIDER,
     };
 
     // --- window plumbing ---
@@ -186,6 +190,10 @@ private:
     void OpenDataFolder();
     void ResetBallPosition();
     void CycleSetting(int row);
+    void OpenSettingDropdown(int row);
+    void SelectSettingOption(int row, int option);
+    void SetSliderFromX(int row, int x);
+    void ApplySettingsLive();
 
     // --- tasks ---
     Task* FindTask(const std::wstring& id);
@@ -308,6 +316,9 @@ private:
     float listScroll_ = 0;
     float settingsScroll_ = 0;
     float archiveScroll_ = 0;
+    int settingsDropdown_ = -1;
+    int settingsSlider_ = -1;
+    bool sliderDragging_ = false;
     bool lastDark_ = false;
 
     std::wstring toast_;

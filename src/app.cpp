@@ -123,6 +123,7 @@ bool App::InitApp() {
 
     RegisterClasses();
     CreateWindows();
+    RecomputeScale();
     ResizeBallWindow();
     PlaceBallFromSettings();
     ApplyAlwaysOnTop();
@@ -340,6 +341,8 @@ void App::ShowBall(bool activate) {
     if (!ball_) return;
     PlaceBallFromSettings();
     ShowWindow(ball_, activate ? SW_SHOW : SW_SHOWNOACTIVATE);
+    UINT actualDpi = GetDpiForWindow(ball_);
+    if (actualDpi != 0 && actualDpi != dpi_) ApplyDpi(actualDpi);
     ballVisible_ = true;
     PaintBall();
     UpdateTrayTip();
@@ -604,24 +607,24 @@ int App::DesiredCardHeight() const {
             if (rows < 1) rows = 1;
             logical = 56.0f + 38.0f + rows * 58.0f;
             if (!saveError_.empty() || !dataNotice_.empty()) logical += 38.0f;
-            logical = std::clamp(logical, 280.0f, 500.0f);
+            logical = std::clamp(logical, 300.0f, 520.0f);
             break;
         }
         case View::Form:
-            logical = 352.0f;
+            logical = 372.0f;
             break;
         case View::DatePicker:
-            logical = 416.0f;
+            logical = 432.0f;
             break;
         case View::Archive: {
             int rows = (int)SortedArchive().size();
             if (rows < 1) rows = 1;
             logical = 56.0f + rows * 62.0f + 24.0f;
-            logical = std::clamp(logical, 300.0f, 500.0f);
+            logical = std::clamp(logical, 320.0f, 520.0f);
             break;
         }
         case View::Settings:
-            logical = 500.0f;
+            logical = 540.0f;
             break;
     }
     int height = Px(logical);
@@ -798,21 +801,16 @@ LRESULT App::BallProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
                 SnapBall();
             } else {
                 if (panelVisible_) {
-                    if (panelPinned_) {
-                        HidePanel(true);
-                        hoverSuppressed_ = true;
-                    } else {
-                        panelPinned_ = true;
-                        PaintPanel();
-                    }
+                    HidePanel(true);
+                    hoverSuppressed_ = true;
                 } else {
-                    ShowPanel(true, true);
+                    ShowPanel(false, true);
                 }
             }
             return 0;
         }
         case WM_LBUTTONDBLCLK:
-            ShowPanel(true, true);
+            ShowPanel(false, true);
             return 0;
         case WM_RBUTTONUP: {
             POINT pt{};
@@ -908,6 +906,10 @@ LRESULT App::PanelProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             mouseInPanel_ = true;
             KillTimer(hwnd, TIMER_COLLAPSE);
             POINT pt{GET_X_LPARAM(lp), GET_Y_LPARAM(lp)};
+            if (sliderDragging_ && settingsSlider_ >= 0) {
+                SetSliderFromX(settingsSlider_, pt.x);
+                return 0;
+            }
             OnPanelMouseMove(pt);
             return 0;
         }
@@ -918,15 +920,38 @@ LRESULT App::PanelProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
                 SetTimer(hwnd, TIMER_COLLAPSE, 350, nullptr);
             return 0;
         }
-        case WM_LBUTTONDOWN:
+        case WM_LBUTTONDOWN: {
             SetFocus(hwnd);
             KillTimer(hwnd, TIMER_COLLAPSE);
+            POINT pt{GET_X_LPARAM(lp), GET_Y_LPARAM(lp)};
+            if (view_ == View::Settings) {
+                std::wstring id;
+                Control c = HitTest(pt, &id);
+                if (c == C_SLIDER && id.rfind(L"setting:", 0) == 0) {
+                    settingsSlider_ = _wtoi(id.c_str() + 8);
+                    sliderDragging_ = true;
+                    SetCapture(hwnd);
+                    SetSliderFromX(settingsSlider_, pt.x);
+                }
+            }
             return 0;
+        }
         case WM_LBUTTONUP: {
+            if (sliderDragging_) {
+                sliderDragging_ = false;
+                settingsSlider_ = -1;
+                ReleaseCapture();
+                OnSettingsChanged();
+                return 0;
+            }
             POINT pt{GET_X_LPARAM(lp), GET_Y_LPARAM(lp)};
             OnPanelClick(pt);
             return 0;
         }
+        case WM_CAPTURECHANGED:
+            sliderDragging_ = false;
+            settingsSlider_ = -1;
+            return 0;
         case WM_RBUTTONUP: {
             POINT pt{GET_X_LPARAM(lp), GET_Y_LPARAM(lp)};
             OnPanelRightClick(pt);

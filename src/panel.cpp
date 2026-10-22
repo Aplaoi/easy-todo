@@ -67,6 +67,73 @@ std::wstring SettingValue(const Settings& s, const std::wstring& lastBackup, int
     }
 }
 
+bool IsToggleSetting(int i) {
+    return i == 0 || i == 1 || i == 3 || i == 7;
+}
+
+bool IsDropdownSetting(int i) {
+    return i == 2 || i == 4 || i == 5 || i == 8;
+}
+
+bool IsSliderSetting(int i) {
+    return i == 6 || i == 9 || i == 10;
+}
+
+std::vector<std::wstring> SettingOptions(int i) {
+    switch (i) {
+        case 2: return {L"悬停", L"仅点击"};
+        case 4: return {L"跟随系统", L"浅色", L"深色"};
+        case 5: return {L"剩余天数", L"纯图标"};
+        case 8: return {L"跟随系统", L"强制减少", L"不减少"};
+        default: return {};
+    }
+}
+
+int SettingOptionIndex(const Settings& s, int i) {
+    switch (i) {
+        case 2: return s.app.trigger == L"click" ? 1 : 0;
+        case 4:
+            if (s.app.theme == L"light") return 1;
+            if (s.app.theme == L"dark") return 2;
+            return 0;
+        case 5: return s.ball.display == L"icon" ? 1 : 0;
+        case 8:
+            if (s.app.reduceMotion == L"on") return 1;
+            if (s.app.reduceMotion == L"off") return 2;
+            return 0;
+        default: return 0;
+    }
+}
+
+float SliderMin(int i) {
+    switch (i) {
+        case 6: return 48.0f;
+        case 9: return 70.0f;
+        case 10: return 80.0f;
+        default: return 0.0f;
+    }
+}
+
+float SliderMax(int i) {
+    switch (i) {
+        case 6: return 64.0f;
+        case 9: return 100.0f;
+        case 10: return 100.0f;
+        default: return 100.0f;
+    }
+}
+
+float SliderStep(int i) {
+    return i == 6 ? 2.0f : 1.0f;
+}
+
+float SliderValue(const Settings& s, int i) {
+    if (i == 6) return (float)s.ball.size;
+    if (i == 9) return (float)s.ball.opacity;
+    if (i == 10) return (float)s.panel.opacity;
+    return 0.0f;
+}
+
 std::wstring CompletedLabel(const std::wstring& iso) {
     if (iso.size() >= 10) {
         int month = (iso[5] - L'0') * 10 + (iso[6] - L'0');
@@ -197,9 +264,9 @@ void App::BuildLayout() {
             Rect(card.x + card.w - S(18) - S(32), card.y + S(64), S(32), S(32));
         layout_.calTitle =
             Rect(card.x + S(56), card.y + S(64), card.w - S(112), S(32));
-        layout_.calToday = Rect(card.x + S(18), card.y + S(360), S(120), S(36));
+        layout_.calToday = Rect(card.x + S(18), card.y + card.h - S(56), S(120), S(36));
         layout_.calCancel =
-            Rect(card.x + card.w - S(18) - S(90), card.y + S(360), S(90), S(36));
+            Rect(card.x + card.w - S(18) - S(90), card.y + card.h - S(56), S(90), S(36));
 
         int64_t first = DaysFromCivil(calYear_, calMonth_, 1);
         int weekday = (int)(((first + 3) % 7 + 7) % 7);  // Monday = 0
@@ -218,10 +285,46 @@ void App::BuildLayout() {
     } else {
         float y = layout_.content.y + S(4) - settingsScroll_;
         for (int i = 0; i < kSettingCount; ++i) {
-            layout_.settingRows.push_back(
-                std::make_pair(i, Rect(layout_.content.x + S(4), y, layout_.content.w - S(8),
-                                       S(kSettingRowHeight))));
+            Rect row(layout_.content.x + S(4), y, layout_.content.w - S(8), S(kSettingRowHeight));
+            layout_.settingRows.push_back(std::make_pair(i, row));
+            float rowRight = row.x + row.w - S(16);
+            if (IsToggleSetting(i)) {
+                layout_.settingValues.push_back(std::make_pair(
+                    i, Rect(rowRight - S(44), row.y + S(11), S(44), S(24))));
+            } else if (IsDropdownSetting(i)) {
+                layout_.settingValues.push_back(std::make_pair(
+                    i, Rect(rowRight - S(132), row.y + S(8), S(132), S(30))));
+            } else if (IsSliderSetting(i)) {
+                layout_.settingValues.push_back(std::make_pair(
+                    i, Rect(rowRight - S(164), row.y + S(17), S(100), S(12))));
+            }
             y += S(kSettingRowHeight);
+        }
+
+        if (settingsDropdown_ >= 0) {
+            const Rect* anchor = nullptr;
+            for (const auto& entry : layout_.settingValues) {
+                if (entry.first == settingsDropdown_) {
+                    anchor = &entry.second;
+                    break;
+                }
+            }
+            auto options = SettingOptions(settingsDropdown_);
+            if (anchor && !options.empty()) {
+                float itemH = S(34);
+                float width = S(152);
+                float total = itemH * (float)options.size() + S(8);
+                float x = card.x + card.w - S(20) - width;
+                float yTop = anchor->y + anchor->h + S(6);
+                if (yTop + total > card.y + card.h - S(10))
+                    yTop = anchor->y - total - S(6);
+                yTop = std::max(card.y + S(56), yTop);
+                for (size_t k = 0; k < options.size(); ++k) {
+                    layout_.dropdownOptions.push_back(std::make_pair(
+                        (int)k, Rect(x + S(4), yTop + S(4) + itemH * (float)k, width - S(8),
+                                     itemH)));
+                }
+            }
         }
     }
 
@@ -330,11 +433,26 @@ App::Control App::HitTest(POINT pt, std::wstring* taskId) const {
 
     if (view_ == View::Settings) {
         if (layout_.btnBack.Contains(pt)) return C_BACK;
+        for (const auto& entry : layout_.dropdownOptions) {
+            if (entry.second.Contains(pt)) {
+                if (taskId) *taskId = Format(L"dd:%d", entry.first);
+                return C_SETTING_OPTION;
+            }
+        }
         if (!layout_.content.Contains(pt)) return C_NONE;
         for (const auto& entry : layout_.settingRows) {
             if (entry.first == 14) continue;
             if (entry.second.Contains(pt)) {
                 if (taskId) *taskId = Format(L"setting:%d", entry.first);
+                if (IsSliderSetting(entry.first)) {
+                    for (const auto& value : layout_.settingValues) {
+                        if (value.first != entry.first) continue;
+                        Rect hit(value.second.x - S(12), entry.second.y,
+                                 entry.second.x + entry.second.w - value.second.x + S(12),
+                                 entry.second.h);
+                        if (hit.Contains(pt)) return C_SLIDER;
+                    }
+                }
                 return C_SETTING;
             }
         }
@@ -524,15 +642,27 @@ void App::DrawPanelList(Canvas& c, const Palette& p) {
         DueTone tone;
         std::wstring label = DueLabel(t->dueDay, today, tone);
         std::wstring dateText = L"截止 " + FormatMMDD(t->dueDay);
-        float dateW = MeasureText(fonts_, dateText, S(11));
+        float dateW = MeasureText(fonts_, dateText, S(10.5f));
         Color toneColor = tone == DueTone::Overdue ? p.overdue
                           : tone == DueTone::Soon  ? p.soon
-                                                   : p.normal;
-        DrawText(c, fonts_, dateText, Rect(textX, hit.row.y + S(31), dateW + S(4), S(18)), p.subtext,
-                 S(11));
-        DrawText(c, fonts_, L" · " + label,
-                 Rect(textX + dateW + S(3), hit.row.y + S(31), textW - dateW, S(18)), toneColor,
-                 S(11));
+                                                   : p.accent;
+        DrawText(c, fonts_, dateText,
+                 Rect(textX, hit.row.y + S(31), dateW + S(4), S(18)), p.subtext, S(10.5f));
+        float pillX = textX + dateW + S(8);
+        float pillW = MeasureText(fonts_, label, S(10.5f)) + S(14);
+        pillW = std::min(pillW, textRight - pillX);
+        if (pillW > S(18)) {
+            Rect pill(pillX, hit.row.y + S(27), pillW, S(22));
+            Color pillBg = tone == DueTone::Overdue
+                               ? Color(34, p.overdue.GetR(), p.overdue.GetG(), p.overdue.GetB())
+                               : tone == DueTone::Soon
+                                     ? Color(38, p.soon.GetR(), p.soon.GetG(), p.soon.GetB())
+                                     : p.accentSoft;
+            FillRound(c, pill, S(11), pillBg);
+            DrawText(c, fonts_, label,
+                     Rect(pill.x + S(7), pill.y, pill.w - S(14), pill.h), toneColor, S(10.5f),
+                     true);
+        }
         if (completeT > 0) {
             float titleW = std::min(MeasureText(fonts_, t->title, S(13.5f)), textW);
             DrawLine(c, textX, hit.row.y + S(19), textX + titleW * completeT,
@@ -548,8 +678,8 @@ void App::DrawPanelList(Canvas& c, const Palette& p) {
         float maxScroll = MaxScrollForView();
         float total = layout_.content.h + maxScroll;
         float thumbH = std::max(S(24), layout_.content.h * layout_.content.h / total);
-        float t = maxScroll > 0 ? listScroll_ / maxScroll : 0;
-        float thumbY = layout_.content.y + (layout_.content.h - thumbH) * t;
+        float thumbT = maxScroll > 0 ? listScroll_ / maxScroll : 0;
+        float thumbY = layout_.content.y + (layout_.content.h - thumbH) * thumbT;
         FillRound(c, Rect(layout_.scrollbar.x, thumbY, layout_.scrollbar.w, thumbH), S(2),
                   Color(90, p.faint.GetR(), p.faint.GetG(), p.faint.GetB()));
     }
@@ -570,6 +700,9 @@ void App::DrawPanelForm(Canvas& c, const Palette& p) {
     Rect field = layout_.titleField;
     FillRound(c, field, S(10), p.field);
     StrokeRound(c, field, S(10), p.border, 1.0f);
+    if (GetFocus() == panel_)
+        StrokeRound(c, field, S(10),
+                    Color(170, p.accent.GetR(), p.accent.GetG(), p.accent.GetB()), 1.4f);
 
     float fontPx = S(14);
     float innerW = field.w - S(28);
@@ -583,8 +716,8 @@ void App::DrawPanelForm(Canvas& c, const Palette& p) {
 
     c.g().SetClip(RectF(field.x + S(10), field.y + S(2), field.w - S(20), field.h - S(4)));
     if (formTitle_.empty() && imeComp_.empty()) {
-        DrawText(c, fonts_, L"例如：数学卷子", Rect(textX, field.y, field.w - S(24), field.h), p.faint,
-                 fontPx);
+        DrawText(c, fonts_, L"例如：数学卷子",
+                 Rect(textX + S(1), field.y, field.w - S(24), field.h), p.faint, fontPx);
     } else {
         std::wstring display =
             formTitle_.substr(0, (size_t)caret_) + imeComp_ + formTitle_.substr((size_t)caret_);
@@ -594,11 +727,11 @@ void App::DrawPanelForm(Canvas& c, const Palette& p) {
             DrawLine(c, textX + prefixW, field.y + field.h - S(10), textX + prefixW + compW,
                      field.y + field.h - S(10), p.accent, std::max(1.0f, S(1)));
         }
-        if (caretOn_ && imeComp_.empty()) {
-            float cx = textX + prefixW;
-            DrawLine(c, cx, field.y + S(11), cx, field.y + field.h - S(11), p.accent,
-                     std::max(1.0f, S(1.5f)));
-        }
+    }
+    if (caretOn_ && imeComp_.empty()) {
+        float cx = textX + prefixW;
+        DrawLine(c, cx, field.y + S(11), cx, field.y + field.h - S(11), p.accent,
+                 std::max(1.0f, S(1.5f)));
     }
     c.g().ResetClip();
 
@@ -801,37 +934,106 @@ void App::DrawPanelSettings(Canvas& c, const Palette& p) {
              1.0f);
 
     int archiveCount = (int)SortedArchive().size();
+    auto valueRect = [&](int row) -> Rect {
+        for (const auto& entry : layout_.settingValues)
+            if (entry.first == row) return entry.second;
+        return Rect();
+    };
+
     c.g().SetClip(RectF(layout_.content.x, layout_.content.y, layout_.content.w,
                         layout_.content.h));
     for (const auto& entry : layout_.settingRows) {
         int index = entry.first;
         const Rect& r = entry.second;
         if (r.y + r.h < layout_.content.y || r.y > layout_.content.y + layout_.content.h) continue;
-        bool hover = hoverTaskId_ == Format(L"setting:%d", index) && hoverControl_ == C_SETTING;
+        std::wstring settingId = Format(L"setting:%d", index);
+        bool hover = hoverTaskId_ == settingId &&
+                     (hoverControl_ == C_SETTING || hoverControl_ == C_SLIDER);
         if (hover) FillRound(c, Rect(r.x + S(2), r.y, r.w - S(4), r.h), S(8), p.hover);
         DrawText(c, fonts_, SettingLabel(index),
-                 Rect(r.x + S(12), r.y, r.w - S(140), r.h), p.text, S(12.5f));
+                 Rect(r.x + S(12), r.y, r.w - S(170), r.h), p.text, S(12.5f));
+
         std::wstring value = SettingValue(settings_, lastBackup_, archiveCount, index);
-        bool action = index >= 11;
-        Color valueColor = action ? p.accent : p.subtext;
-        if (index == 0 || index == 1 || index == 3 || index == 7) {
+        if (IsToggleSetting(index)) {
+            Rect sw = valueRect(index);
             bool on = (index == 0 && settings_.app.autoStart) ||
                       (index == 1 && settings_.app.showOnBoot) ||
                       (index == 3 && settings_.panel.alwaysOnTop) ||
                       (index == 7 && settings_.ball.halfHidden);
-            valueColor = on ? p.accent : p.faint;
-        }
-        DrawText(c, fonts_, value,
-                 Rect(r.x + r.w - S(140), r.y, S(112), r.h), valueColor, S(11.5f), false,
-                 TextAlign::Right);
-        if (index < 14)
-            DrawText(c, fonts_, L"\xE76C",
-                     Rect(r.x + r.w - S(24), r.y + S(13), S(14), S(20)), p.faint, S(9), false,
+            FillRound(c, sw, sw.h / 2, on ? p.accent : p.field);
+            StrokeRound(c, sw, sw.h / 2, on ? p.accent : p.border, 1.0f);
+            float knob = sw.h - S(6);
+            float cx = on ? sw.x + sw.w - S(3) - knob / 2 : sw.x + S(3) + knob / 2;
+            FillCircle(c, cx, sw.centerY(), knob / 2, p.white);
+        } else if (IsDropdownSetting(index)) {
+            Rect ctrl = valueRect(index);
+            bool open = settingsDropdown_ == index;
+            FillRound(c, ctrl, S(8), p.field);
+            StrokeRound(c, ctrl, S(8), open || (hover && hoverControl_ == C_SETTING) ? p.accent
+                                                                                    : p.border,
+                        open ? 1.5f : 1.0f);
+            DrawText(c, fonts_, value, Rect(ctrl.x + S(10), ctrl.y, ctrl.w - S(32), ctrl.h),
+                     p.text, S(11.5f));
+            DrawText(c, fonts_, open ? L"\xE70E" : L"\xE70D",
+                     Rect(ctrl.x + ctrl.w - S(26), ctrl.y, S(18), ctrl.h), p.subtext, S(9), false,
                      TextAlign::Center, false, true);
+        } else if (IsSliderSetting(index)) {
+            Rect track = valueRect(index);
+            float minValue = SliderMin(index);
+            float maxValue = SliderMax(index);
+            float valueNow = SliderValue(settings_, index);
+            float t = maxValue > minValue ? (valueNow - minValue) / (maxValue - minValue) : 0.0f;
+            t = std::clamp(t, 0.0f, 1.0f);
+            Rect line(track.x, track.centerY() - S(2), track.w, S(4));
+            FillRound(c, line, S(2), p.field);
+            if (t > 0.001f)
+                FillRound(c, Rect(line.x, line.y, line.w * t, line.h), S(2), p.accent);
+            float thumbX = track.x + track.w * t;
+            FillCircle(c, thumbX, track.centerY(), S(7), p.accent);
+            FillCircle(c, thumbX, track.centerY(), S(3), p.white);
+            DrawText(c, fonts_, value,
+                     Rect(r.x + r.w - S(60), r.y, S(46), r.h), p.subtext, S(11), false,
+                     TextAlign::Right);
+        } else {
+            bool action = index >= 11;
+            Color valueColor = action ? p.accent : p.subtext;
+            DrawText(c, fonts_, value,
+                     Rect(r.x + r.w - S(150), r.y, S(122), r.h), valueColor, S(11.5f), false,
+                     TextAlign::Right);
+            if (index >= 12 && index <= 13)
+                DrawText(c, fonts_, L"\xE76C",
+                         Rect(r.x + r.w - S(24), r.y + S(13), S(14), S(20)), p.faint, S(9), false,
+                         TextAlign::Center, false, true);
+        }
         if (index + 1 < kSettingCount)
             DrawLine(c, r.x + S(12), r.y + r.h, r.x + r.w - S(12), r.y + r.h, p.divider, 1.0f);
     }
     c.g().ResetClip();
+
+    if (settingsDropdown_ >= 0 && !layout_.dropdownOptions.empty()) {
+        const Rect& first = layout_.dropdownOptions.front().second;
+        const Rect& last = layout_.dropdownOptions.back().second;
+        Rect box(first.x - S(4), first.y - S(4), first.w + S(8), last.y + last.h - first.y + S(8));
+        FillRound(c, Rect(box.x + S(1), box.y + S(4), box.w, box.h), S(10), Color(38, 8, 12, 24));
+        FillRound(c, box, S(10), p.card);
+        StrokeRound(c, box, S(10), p.border, 1.0f);
+        auto options = SettingOptions(settingsDropdown_);
+        int current = SettingOptionIndex(settings_, settingsDropdown_);
+        for (const auto& entry : layout_.dropdownOptions) {
+            int k = entry.first;
+            const Rect& opt = entry.second;
+            bool optHover = hoverControl_ == C_SETTING_OPTION &&
+                            hoverTaskId_ == Format(L"dd:%d", k);
+            if (optHover) FillRound(c, opt, S(7), p.hover);
+            if (k == current)
+                DrawText(c, fonts_, L"\xE73E",
+                         Rect(opt.x + S(7), opt.y, S(16), opt.h), p.accent, S(10), false,
+                         TextAlign::Center, false, true);
+            if (k >= 0 && k < (int)options.size())
+                DrawText(c, fonts_, options[(size_t)k],
+                         Rect(opt.x + S(28), opt.y, opt.w - S(34), opt.h), p.text, S(11.5f));
+        }
+    }
 
     if (layout_.scrollbar.w > 0) {
         float maxScroll = MaxScrollForView();
@@ -908,16 +1110,29 @@ void App::PaintBall() {
                  Rect(cx - radius * 0.58f, cy - radius * 0.58f, radius * 1.16f, radius * 1.16f),
                  Color(240, 255, 255, 255), radius * 0.72f, false, TextAlign::Center, false, true);
     } else {
-        std::wstring text;
-        if (overdue)
-            text = L"!";
-        else {
+        if (overdue) {
+            DrawText(c, fonts_, L"!",
+                     Rect(cx - radius, cy - radius * 0.48f, radius * 2, radius * 0.95f),
+                     Color(255, 255, 255, 255), radius * 0.95f, true, TextAlign::Center);
+            DrawText(c, fonts_, L"逾期",
+                     Rect(cx - radius, cy + radius * 0.36f, radius * 2, radius * 0.30f),
+                     Color(225, 255, 255, 255), radius * 0.28f, true, TextAlign::Center);
+        } else {
             int64_t diff = minDue - today;
-            text = diff > 99 ? L"99" : Format(L"%lld", (long long)diff);
+            if (diff == 0) {
+                DrawText(c, fonts_, L"今天",
+                         Rect(cx - radius, cy - radius * 0.44f, radius * 2, radius * 0.88f),
+                         Color(255, 255, 255, 255), radius * 0.46f, true, TextAlign::Center);
+            } else {
+                std::wstring text = diff > 99 ? L"99" : Format(L"%lld", (long long)diff);
+                DrawText(c, fonts_, text,
+                         Rect(cx - radius, cy - radius * 0.40f, radius * 2, radius * 0.92f),
+                         Color(255, 255, 255, 255), radius * 0.68f, true, TextAlign::Center);
+                DrawText(c, fonts_, L"天",
+                         Rect(cx - radius, cy + radius * 0.34f, radius * 2, radius * 0.30f),
+                         Color(225, 255, 255, 255), radius * 0.28f, true, TextAlign::Center);
+            }
         }
-        DrawText(c, fonts_, text, Rect(cx - radius, cy - radius * 0.05f, radius * 2, radius * 1.1f),
-                 Color(255, 255, 255, 255), overdue ? radius * 0.95f : radius * 0.82f, true,
-                 TextAlign::Center);
     }
 
     if (pendingCount > 0) {
@@ -1010,6 +1225,9 @@ void App::CompleteHidePanel() {
     panelAnimating_ = false;
     panelVisible_ = false;
     panelPinned_ = false;
+    settingsDropdown_ = -1;
+    sliderDragging_ = false;
+    settingsSlider_ = -1;
     animT_ = 1.0f;
     if (panel_) ShowWindow(panel_, SW_HIDE);
     view_ = View::List;
@@ -1234,14 +1452,41 @@ void App::OnPanelClick(POINT pt) {
             OpenList();
             return;
         }
+        if (settingsDropdown_ >= 0) {
+            if (c == C_SETTING_OPTION && id.rfind(L"dd:", 0) == 0) {
+                SelectSettingOption(settingsDropdown_, _wtoi(id.c_str() + 3));
+            } else {
+                settingsDropdown_ = -1;
+                LayoutPanelWindow(true);
+                PaintPanel();
+            }
+            return;
+        }
         if (c == C_SETTING && id.rfind(L"setting:", 0) == 0) {
             int index = _wtoi(id.c_str() + 8);
-            CycleSetting(index);
+            if (IsDropdownSetting(index)) {
+                OpenSettingDropdown(index);
+            } else if (IsSliderSetting(index)) {
+                return;
+            } else {
+                CycleSetting(index);
+            }
+            return;
+        }
+        if (c == C_SLIDER && id.rfind(L"setting:", 0) == 0) {
+            SetSliderFromX(_wtoi(id.c_str() + 8), pt.x);
+            return;
         }
     }
 }
 
 void App::OnPanelMouseWheel(int delta) {
+    if (settingsDropdown_ >= 0) {
+        settingsDropdown_ = -1;
+        BuildLayout();
+        PaintPanel();
+        return;
+    }
     float maxScroll = MaxScrollForView();
     if (maxScroll <= 0) return;
     float step = S(56) * (delta > 0 ? -1.0f : 1.0f);
@@ -1296,6 +1541,12 @@ void App::OnPanelRightClick(POINT pt) {
 }
 
 void App::OnPanelKey(WPARAM key) {
+    if (settingsDropdown_ >= 0) {
+        settingsDropdown_ = -1;
+        BuildLayout();
+        PaintPanel();
+        if (key == VK_ESCAPE) return;
+    }
     if (view_ == View::DatePicker) {
         if (key == VK_ESCAPE) {
             CloseDatePicker();
@@ -1501,6 +1752,9 @@ void App::SetCaretFromX(float x) {
 void App::OpenList() {
     view_ = View::List;
     panelPinned_ = false;
+    settingsDropdown_ = -1;
+    sliderDragging_ = false;
+    settingsSlider_ = -1;
     formEditing_ = false;
     formError_.clear();
     imeComp_.clear();
@@ -1643,6 +1897,9 @@ void App::OpenSettings() {
     view_ = View::Settings;
     panelPinned_ = true;
     settingsScroll_ = 0;
+    settingsDropdown_ = -1;
+    sliderDragging_ = false;
+    settingsSlider_ = -1;
     if (!panelVisible_) {
         ShowPanel(true, true);
     } else {
@@ -1776,6 +2033,74 @@ void App::OnSettingsChanged() {
     }
     PaintBall();
     UpdateTrayTip();
+}
+
+void App::OpenSettingDropdown(int row) {
+    if (!IsDropdownSetting(row)) return;
+    settingsDropdown_ = settingsDropdown_ == row ? -1 : row;
+    BuildLayout();
+    PaintPanel();
+}
+
+void App::SelectSettingOption(int row, int option) {
+    auto options = SettingOptions(row);
+    if (option < 0 || option >= (int)options.size()) return;
+    switch (row) {
+        case 2: settings_.app.trigger = option == 1 ? L"click" : L"hover"; break;
+        case 4:
+            settings_.app.theme = option == 1 ? L"light" : (option == 2 ? L"dark" : L"system");
+            break;
+        case 5: settings_.ball.display = option == 1 ? L"icon" : L"days"; break;
+        case 8:
+            settings_.app.reduceMotion =
+                option == 1 ? L"on" : (option == 2 ? L"off" : L"system");
+            break;
+        default: return;
+    }
+    settingsDropdown_ = -1;
+    OnSettingsChanged();
+}
+
+void App::SetSliderFromX(int row, int x) {
+    if (!IsSliderSetting(row)) return;
+    Rect track;
+    bool found = false;
+    for (const auto& entry : layout_.settingValues) {
+        if (entry.first == row) {
+            track = entry.second;
+            found = true;
+            break;
+        }
+    }
+    if (!found || track.w <= 0) return;
+    float t = std::clamp(((float)x - track.x) / track.w, 0.0f, 1.0f);
+    float minValue = SliderMin(row);
+    float maxValue = SliderMax(row);
+    float step = SliderStep(row);
+    float raw = minValue + t * (maxValue - minValue);
+    int value = (int)std::lround((raw - minValue) / step) * (int)step + (int)minValue;
+    value = std::clamp(value, (int)minValue, (int)maxValue);
+
+    bool changed = false;
+    if (row == 6 && settings_.ball.size != value) {
+        settings_.ball.size = value;
+        changed = true;
+    } else if (row == 9 && settings_.ball.opacity != value) {
+        settings_.ball.opacity = value;
+        changed = true;
+    } else if (row == 10 && settings_.panel.opacity != value) {
+        settings_.panel.opacity = value;
+        changed = true;
+    }
+    if (changed) ApplySettingsLive();
+}
+
+void App::ApplySettingsLive() {
+    reduceMotion_ = ReduceMotionEnabled();
+    ResizeBallWindow();
+    PlaceBallFromSettings();
+    PaintBall();
+    if (panelVisible_) PaintPanel();
 }
 
 void App::ApplyAlwaysOnTop() {
