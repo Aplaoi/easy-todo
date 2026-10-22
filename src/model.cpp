@@ -123,6 +123,32 @@ std::wstring DueLabel(int64_t dueDay, int64_t today, DueTone& tone) {
     return Format(L"剩 %lld 天", (long long)diff);
 }
 
+std::wstring RepeatShort(const std::wstring& repeat) {
+    if (repeat == L"daily") return L"每天";
+    if (repeat == L"weekly") return L"每周";
+    if (repeat == L"monthly") return L"每月";
+    return L"不重复";
+}
+
+int64_t NextRepeatDay(int64_t dueDay, const std::wstring& repeat) {
+    if (repeat == L"daily") return dueDay + 1;
+    if (repeat == L"weekly") return dueDay + 7;
+    if (repeat != L"monthly") return dueDay;
+
+    int y = 0, m = 0, d = 0;
+    CivilFromDay(dueDay, y, m, d);
+    ++m;
+    if (m > 12) {
+        m = 1;
+        ++y;
+    }
+    static const int days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    int limit = days[m - 1];
+    if (m == 2 && (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0))) limit = 29;
+    if (d > limit) d = limit;
+    return DaysFromCivil(y, m, d);
+}
+
 std::wstring MakeTaskId() {
     UUID uuid{};
     if (UuidCreate(&uuid) != RPC_S_OK) return Format(L"task-%llu", (unsigned long long)NowMs());

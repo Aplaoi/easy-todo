@@ -37,6 +37,9 @@ bool Store::Init(std::wstring& error) {
         return false;
     }
     dir_ = JoinPath(appData, L"HomeworkFloat");
+    wchar_t overrideDir[32768]{};
+    DWORD overrideLen = GetEnvironmentVariableW(L"HF_DATA_DIR", overrideDir, 32768);
+    if (overrideLen > 0 && overrideLen < 32768) dir_ = overrideDir;
     tasksPath_ = JoinPath(dir_, L"tasks.json");
     settingsPath_ = JoinPath(dir_, L"settings.json");
     backupsDir_ = JoinPath(dir_, L"backups");
@@ -168,6 +171,9 @@ bool Store::ParseTasksText(const std::string& utf8, std::vector<Task>& tasks, st
         std::wstring status = item.GetString(L"status", L"todo");
         t.createdAt = item.GetString(L"createdAt");
         t.completedAt = item.GetString(L"completedAt");
+        t.repeat = item.GetString(L"repeat");
+        if (t.repeat != L"daily" && t.repeat != L"weekly" && t.repeat != L"monthly")
+            t.repeat.clear();
         if (t.id.empty() || t.title.empty() || !ParseISODate(due, t.dueDay)) {
             ++skipped;
             continue;
@@ -369,6 +375,7 @@ bool Store::SaveTasks(const std::vector<Task>& tasks, std::wstring& error) {
         item.Set(L"note", JsonStr(L""));
         item.Set(L"priority", JsonStr(L"normal"));
         item.Set(L"createdAt", JsonStr(t.createdAt.empty() ? LocalNowISO() : t.createdAt));
+        if (!t.repeat.empty()) item.Set(L"repeat", JsonStr(t.repeat));
         if (t.completedAt.empty())
             item.object[L"completedAt"] = JsonValue{};
         else

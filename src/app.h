@@ -31,6 +31,7 @@ struct PanelLayout {
     Rect titleField;
     Rect dateMinus, datePlus, dateValue;
     Rect chipToday, chipTomorrow, chipWeek;
+    Rect repeatField;
     Rect btnSave, btnCancel;
     Rect btnClear;
     Rect scrollbar;
@@ -86,6 +87,7 @@ private:
         C_CHIP_TODAY,
         C_CHIP_TOMORROW,
         C_CHIP_WEEK,
+        C_REPEAT,
         C_CLEAR_ARCHIVE,
         C_TITLE_FIELD,
         C_ROW,
@@ -330,6 +332,7 @@ private:
     std::wstring formId_;
     std::wstring formTitle_;
     int64_t formDue_ = 0;
+    std::wstring formRepeat_;
     std::wstring formError_;
     std::wstring imeComp_;
     int caret_ = 0;

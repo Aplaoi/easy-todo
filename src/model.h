@@ -11,6 +11,7 @@ struct Task {
     bool done = false;
     std::wstring createdAt;    // ISO local datetime
     std::wstring completedAt;  // ISO local datetime, empty when not done
+    std::wstring repeat;       // empty / daily / weekly / monthly
 };
 
 struct BallSettings {
@@ -58,6 +59,8 @@ std::wstring LocalNowISO();
 enum class DueTone { Normal, Soon, Overdue };
 
 std::wstring DueLabel(int64_t dueDay, int64_t today, DueTone& tone);
+std::wstring RepeatShort(const std::wstring& repeat);
+int64_t NextRepeatDay(int64_t dueDay, const std::wstring& repeat);
 std::wstring MakeTaskId();
 
 bool SortTodo(const Task* a, const Task* b);

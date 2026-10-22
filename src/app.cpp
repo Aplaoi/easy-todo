@@ -607,11 +607,11 @@ int App::DesiredCardHeight() const {
             if (rows < 1) rows = 1;
             logical = 56.0f + 38.0f + rows * 58.0f;
             if (!saveError_.empty() || !dataNotice_.empty()) logical += 38.0f;
-            logical = std::clamp(logical, 300.0f, 520.0f);
+            logical = std::clamp(logical, 300.0f, 620.0f);
             break;
         }
         case View::Form:
-            logical = 372.0f;
+            logical = 412.0f;
             break;
         case View::DatePicker:
             logical = 432.0f;

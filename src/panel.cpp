@@ -241,6 +241,7 @@ void App::BuildLayout() {
         layout_.chipToday = Rect(x, card.y + S(216), S(78), S(28));
         layout_.chipTomorrow = Rect(x + S(86), card.y + S(216), S(78), S(28));
         layout_.chipWeek = Rect(x + S(172), card.y + S(216), S(78), S(28));
+        layout_.repeatField = Rect(x + S(44), card.y + S(252), S(150), S(30));
         layout_.btnCancel = Rect(card.x + card.w - S(18) - S(84), card.y + card.h - S(56), S(84),
                                  S(38));
         layout_.btnSave =
@@ -392,6 +393,7 @@ App::Control App::HitTest(POINT pt, std::wstring* taskId) const {
         if (layout_.chipToday.Contains(pt)) return C_CHIP_TODAY;
         if (layout_.chipTomorrow.Contains(pt)) return C_CHIP_TOMORROW;
         if (layout_.chipWeek.Contains(pt)) return C_CHIP_WEEK;
+        if (layout_.repeatField.Contains(pt)) return C_REPEAT;
         return C_NONE;
     }
 
@@ -662,6 +664,15 @@ void App::DrawPanelList(Canvas& c, const Palette& p) {
             DrawText(c, fonts_, label,
                      Rect(pill.x + S(7), pill.y, pill.w - S(14), pill.h), toneColor, S(10.5f),
                      true);
+            if (!t->repeat.empty()) {
+                float rx = pill.x + pill.w + S(8);
+                if (rx + S(38) <= textRight) {
+                    DrawText(c, fonts_, L"\xE8EE", Rect(rx, pill.y, S(14), pill.h), p.accent,
+                             S(10), false, TextAlign::Center, false, true);
+                    DrawText(c, fonts_, RepeatShort(t->repeat),
+                             Rect(rx + S(15), pill.y, S(32), pill.h), p.accent, S(9.5f), true);
+                }
+            }
         }
         if (completeT > 0) {
             float titleW = std::min(MeasureText(fonts_, t->title, S(13.5f)), textW);
@@ -783,12 +794,27 @@ void App::DrawPanelForm(Canvas& c, const Palette& p) {
     drawChip(layout_.chipTomorrow, L"明天", formDue_ == today + 1, C_CHIP_TOMORROW);
     drawChip(layout_.chipWeek, L"一周后", formDue_ == today + 7, C_CHIP_WEEK);
 
+    Rect repeat = layout_.repeatField;
+    DrawText(c, fonts_, L"重复", Rect(card.x + S(18), repeat.y, S(38), repeat.h), p.subtext,
+             S(10.5f));
+    FillRound(c, repeat, S(9), hoverControl_ == C_REPEAT ? p.hover : p.field);
+    StrokeRound(c, repeat, S(9), p.border, 1.0f);
+    std::wstring repeatText = RepeatShort(formRepeat_);
+    if (formRepeat_ == L"weekly") repeatText = L"每" + WeekdayCN(formDue_);
+    DrawText(c, fonts_, repeatText,
+             Rect(repeat.x + S(12), repeat.y, repeat.w - S(34), repeat.h), p.text, S(11));
+    DrawText(c, fonts_, L"\xE8EE",
+             Rect(repeat.x + repeat.w - S(24), repeat.y, S(16), repeat.h), p.faint, S(10), false,
+             TextAlign::Center, false, true);
+
     if (!formError_.empty()) {
         DrawText(c, fonts_, formError_,
-                 Rect(card.x + S(18), card.y + S(252), card.w - S(36), S(20)), p.overdue, S(10.5f));
+                 Rect(card.x + S(18), card.y + S(292), card.w - S(36), S(20)), p.overdue, S(10.5f));
     } else {
-        DrawText(c, fonts_, L"仅按自然日计算，不设置具体时间",
-                 Rect(card.x + S(18), card.y + S(252), card.w - S(36), S(20)), p.faint, S(10.5f));
+        DrawText(c, fonts_,
+                 formRepeat_.empty() ? L"仅按自然日计算，不设置具体时间"
+                                     : L"完成后自动生成下一次",
+                 Rect(card.x + S(18), card.y + S(292), card.w - S(36), S(20)), p.faint, S(10.5f));
     }
 
     Button(c, fonts_, layout_.btnSave, L"保存", true, hoverControl_ == C_SAVE, p, S(10), S(13));
@@ -1380,6 +1406,17 @@ void App::OnPanelClick(POINT pt) {
                 formDue_ = TodayLocalDay() + 7;
                 PaintPanel();
                 return;
+            case C_REPEAT:
+                if (formRepeat_.empty())
+                    formRepeat_ = L"daily";
+                else if (formRepeat_ == L"daily")
+                    formRepeat_ = L"weekly";
+                else if (formRepeat_ == L"weekly")
+                    formRepeat_ = L"monthly";
+                else
+                    formRepeat_.clear();
+                PaintPanel();
+                return;
             case C_TITLE_FIELD:
                 SetFocus(panel_);
                 SetCaretFromX((float)pt.x);
@@ -1775,11 +1812,13 @@ void App::OpenForm(const Task* task) {
         formId_ = task->id;
         formTitle_ = task->title;
         formDue_ = task->dueDay;
+        formRepeat_ = task->repeat;
     } else {
         formEditing_ = false;
         formId_.clear();
         formTitle_.clear();
         formDue_ = TodayLocalDay();
+        formRepeat_.clear();
     }
     formError_.clear();
     imeComp_.clear();
@@ -1834,6 +1873,7 @@ void App::CancelForm() {
     formId_.clear();
     formTitle_.clear();
     formError_.clear();
+    formRepeat_.clear();
     imeComp_.clear();
     KillTimer(panel_, TIMER_CARET);
     caretTimerOn_ = false;
@@ -1852,12 +1892,14 @@ void App::SaveForm() {
         if (Task* t = FindTask(formId_)) {
             t->title = title;
             t->dueDay = formDue_;
+            t->repeat = formRepeat_;
         }
     } else {
         Task t;
         t.id = MakeTaskId();
         t.title = title;
         t.dueDay = formDue_;
+        t.repeat = formRepeat_;
         t.done = false;
         t.createdAt = LocalNowISO();
         tasks_.push_back(std::move(t));
@@ -1869,6 +1911,7 @@ void App::SaveForm() {
     formId_.clear();
     formTitle_.clear();
     formError_.clear();
+    formRepeat_.clear();
     imeComp_.clear();
     KillTimer(panel_, TIMER_CARET);
     caretTimerOn_ = false;
@@ -2279,12 +2322,27 @@ void App::FinishComplete() {
     completing_ = false;
     std::wstring id = completingId_;
     completingId_.clear();
+    std::wstring toast = L"已完成，已移入归档";
     if (Task* t = FindTask(id)) {
         t->done = true;
         t->completedAt = LocalNowISO();
+        if (!t->repeat.empty()) {
+            int64_t nextDue = NextRepeatDay(t->dueDay, t->repeat);
+            int64_t today = TodayLocalDay();
+            for (int guard = 0; nextDue <= today && guard < 500; ++guard)
+                nextDue = NextRepeatDay(nextDue, t->repeat);
+            Task next;
+            next.id = MakeTaskId();
+            next.title = t->title;
+            next.dueDay = nextDue;
+            next.repeat = t->repeat;
+            next.createdAt = LocalNowISO();
+            tasks_.push_back(std::move(next));
+            toast = L"已完成，下次 " + FormatMMDD(nextDue);
+        }
     }
     AfterTasksChanged();
-    ShowToast(L"已完成，已移入归档");
+    ShowToast(toast);
 }
 
 void App::RestoreTask(const std::wstring& id) {
