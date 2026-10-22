@@ -498,14 +498,40 @@ App::Control App::HitTest(POINT pt, std::wstring* taskId) const {
 
 Palette App::CurrentPalette() const { return lastDark_ ? DarkPalette() : LightPalette(); }
 
+void App::EnsurePanelBackground() {
+    if (panelBgValid_ && panelBgW_ == panelW_ && panelBgH_ == panelH_ &&
+        panelBgDark_ == lastDark_)
+        return;
+    Canvas bg(panelW_, panelH_);
+    if (!bg.ok()) return;
+    Palette p = CurrentPalette();
+    DrawShadow(bg, layout_.card, S(14));
+    FillRound(bg, layout_.card, S(14), p.card);
+    StrokeRound(bg, layout_.card, S(14), p.border, 1.0f);
+    bg.SavePixels(panelBg_);
+    panelBgW_ = panelW_;
+    panelBgH_ = panelH_;
+    panelBgDark_ = lastDark_;
+    panelBgValid_ = true;
+}
+
+void App::EnsurePanelCanvas() {
+    if (panelCanvas_ && panelCanvas_->width() == panelW_ && panelCanvas_->height() == panelH_ &&
+        panelCanvas_->ok())
+        return;
+    panelCanvas_ = std::make_unique<Canvas>(panelW_, panelH_);
+}
+
 void App::PaintPanel() {
     if (!panelVisible_ || !panel_) return;
     if (panelW_ <= 0 || panelH_ <= 0) return;
 
     RECT wr{};
     GetWindowRect(panel_, &wr);
-    Canvas c(panelW_, panelH_);
-    if (!c.ok()) return;
+    EnsurePanelCanvas();
+    if (!panelCanvas_ || !panelCanvas_->ok()) return;
+    Canvas& c = *panelCanvas_;
+    c.Clear();
 
     Palette p = CurrentPalette();
     float slideX = 0.0f, slideY = 0.0f;
@@ -516,11 +542,11 @@ void App::PaintPanel() {
         else if (settings_.ball.edge == L"top") slideY = -S(10) * k;
         else slideY = S(10) * k;
     }
+    EnsurePanelBackground();
+    int dx = (int)std::lround(slideX);
+    int dy = (int)std::lround(slideY);
+    c.CopyPixels(panelBg_, dx, dy);
     c.g().TranslateTransform(slideX, slideY);
-
-    DrawShadow(c, layout_.card, S(14));
-    FillRound(c, layout_.card, S(14), p.card);
-    StrokeRound(c, layout_.card, S(14), p.border, 1.0f);
 
     PaintPanelView(c, p);
     DrawToast(c, p);

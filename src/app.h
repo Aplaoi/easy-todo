@@ -150,6 +150,8 @@ private:
     // --- painting ---
     void PaintBall();
     void PaintPanel();
+    void EnsurePanelBackground();
+    void EnsurePanelCanvas();
     void PaintPanelView(Canvas& c, const Palette& p);
     void DrawPanelList(Canvas& c, const Palette& p);
     void DrawPanelForm(Canvas& c, const Palette& p);
@@ -313,6 +315,12 @@ private:
     int shadowPx_ = 10;
     Fonts fonts_;
     PanelLayout layout_;
+    std::vector<BYTE> panelBg_;
+    std::unique_ptr<Canvas> panelCanvas_;
+    int panelBgW_ = 0;
+    int panelBgH_ = 0;
+    bool panelBgDark_ = false;
+    bool panelBgValid_ = false;
 
     View view_ = View::List;
     float listScroll_ = 0;

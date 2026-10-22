@@ -685,6 +685,8 @@ void App::LayoutPanelWindow(bool force) {
     panelW_ = newW;
     panelH_ = newH;
     cardH_ = newCardH;
+    panelCanvas_.reset();
+    panelBgValid_ = false;
     SetWindowPos(panel_, settings_.panel.alwaysOnTop ? HWND_TOPMOST : HWND_NOTOPMOST, x, y, newW,
                  newH, SWP_NOACTIVATE);
     BuildLayout();

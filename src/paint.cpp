@@ -123,13 +123,43 @@ void Canvas::Fade(float alpha) {
         return;
     }
     int k = (int)std::lround(alpha * 255.0f);
+    BYTE table[256];
+    for (int i = 0; i < 256; ++i) table[i] = (BYTE)((i * k + 127) / 255);
     BYTE* p = static_cast<BYTE*>(bits_);
     size_t count = (size_t)width_ * height_;
     for (size_t i = 0; i < count; ++i, p += 4) {
-        p[0] = (BYTE)((p[0] * k + 127) / 255);
-        p[1] = (BYTE)((p[1] * k + 127) / 255);
-        p[2] = (BYTE)((p[2] * k + 127) / 255);
-        p[3] = (BYTE)((p[3] * k + 127) / 255);
+        p[0] = table[p[0]];
+        p[1] = table[p[1]];
+        p[2] = table[p[2]];
+        p[3] = table[p[3]];
+    }
+}
+
+void Canvas::Clear() {
+    if (!graphics_) return;
+    graphics_->ResetTransform();
+    graphics_->ResetClip();
+    graphics_->Clear(Color(0, 0, 0, 0));
+}
+
+void Canvas::SavePixels(std::vector<BYTE>& out) const {
+    out.assign((size_t)width_ * height_ * 4, 0);
+    if (bits_ && !out.empty()) memcpy(out.data(), bits_, out.size());
+}
+
+void Canvas::CopyPixels(const std::vector<BYTE>& src, int dx, int dy) {
+    if (!bits_ || src.size() != (size_t)width_ * height_ * 4) return;
+    int sx0 = std::max(0, -dx);
+    int sy0 = std::max(0, -dy);
+    int sx1 = std::min(width_, width_ - dx);
+    int sy1 = std::min(height_, height_ - dy);
+    if (sx1 <= sx0 || sy1 <= sy0) return;
+    size_t rowBytes = (size_t)(sx1 - sx0) * 4;
+    for (int sy = sy0; sy < sy1; ++sy) {
+        const BYTE* s = src.data() + ((size_t)sy * width_ + sx0) * 4;
+        BYTE* d = static_cast<BYTE*>(bits_) +
+                  ((size_t)(sy + dy) * width_ + (sx0 + dx)) * 4;
+        memcpy(d, s, rowBytes);
     }
 }
 

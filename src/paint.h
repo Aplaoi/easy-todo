@@ -54,6 +54,9 @@ public:
 
     void Fade(float alpha);
     bool Present(HWND hwnd, int x, int y);
+    void Clear();
+    void SavePixels(std::vector<BYTE>& out) const;
+    void CopyPixels(const std::vector<BYTE>& src, int dx, int dy);
 
 private:
     int width_ = 0;
