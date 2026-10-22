@@ -1,0 +1,29 @@
+# Build output
+build/
+dist/
+out/
+
+# MSVC intermediates
+*.obj
+*.pdb
+*.ilk
+*.idb
+*.exp
+*.lib
+*.res
+*.exe
+*.dll
+
+# Visual Studio
+.vs/
+*.vcxproj.user
+*.suo
+*.user
+
+# Logs / local data
+*.log
+*.tmp
+
+# OS
+Thumbs.db
+desktop.ini
