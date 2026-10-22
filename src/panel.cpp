@@ -632,7 +632,8 @@ void App::DrawPanelList(Canvas& c, const Palette& p) {
 
         float textX = hit.checkbox.x + S(30);
         float textRight = hit.edit.x - S(8);
-        float textW = textRight - textX;
+        float dayW = S(58);
+        float textW = textRight - textX - dayW - S(8);
         int titleAlpha = (int)(255.0f * (1.0f - 0.35f * completeT));
         Color titleColor((BYTE)titleAlpha, p.text.GetR(), p.text.GetG(), p.text.GetB());
         DrawText(c, fonts_, t->title, Rect(textX, hit.row.y + S(7), textW, S(24)), titleColor,
@@ -641,37 +642,36 @@ void App::DrawPanelList(Canvas& c, const Palette& p) {
                    hoverTaskId_ == t->id && hoverControl_ == C_EDIT,
                    hoverTaskId_ == t->id && hoverControl_ == C_EDIT ? p.accent : p.faint, p.hover,
                    S(12));
-        DueTone tone;
-        std::wstring label = DueLabel(t->dueDay, today, tone);
-        std::wstring dateText = L"截止 " + FormatMMDD(t->dueDay);
-        float dateW = MeasureText(fonts_, dateText, S(10.5f));
+        DueTone tone = DueTone::Normal;
+        DueLabel(t->dueDay, today, tone);
+        int64_t diff = t->dueDay - today;
         Color toneColor = tone == DueTone::Overdue ? p.overdue
                           : tone == DueTone::Soon  ? p.soon
                                                    : p.accent;
+        std::wstring big = diff == 0 ? L"今" : Format(L"%lld", (long long)diff);
+        std::wstring unit = L"天";
+        float bigW = MeasureText(fonts_, big, S(19));
+        float unitW = MeasureText(fonts_, unit, S(9.5f));
+        float blockX = textRight - bigW - S(2) - unitW;
+        DrawText(c, fonts_, big,
+                 Rect(blockX, hit.row.y + S(3), bigW + S(2), S(32)), toneColor, S(19), true,
+                 TextAlign::Left);
+        DrawText(c, fonts_, unit,
+                 Rect(blockX + bigW + S(2), hit.row.y + S(12), unitW + S(2), S(22)), toneColor,
+                 S(9.5f), true, TextAlign::Left);
+
+        std::wstring dateText = L"截止 " + FormatMMDD(t->dueDay);
+        float dateW = MeasureText(fonts_, dateText, S(10.5f));
         DrawText(c, fonts_, dateText,
                  Rect(textX, hit.row.y + S(31), dateW + S(4), S(18)), p.subtext, S(10.5f));
-        float pillX = textX + dateW + S(8);
-        float pillW = MeasureText(fonts_, label, S(10.5f)) + S(14);
-        pillW = std::min(pillW, textRight - pillX);
-        if (pillW > S(18)) {
-            Rect pill(pillX, hit.row.y + S(27), pillW, S(22));
-            Color pillBg = tone == DueTone::Overdue
-                               ? Color(34, p.overdue.GetR(), p.overdue.GetG(), p.overdue.GetB())
-                               : tone == DueTone::Soon
-                                     ? Color(38, p.soon.GetR(), p.soon.GetG(), p.soon.GetB())
-                                     : p.accentSoft;
-            FillRound(c, pill, S(11), pillBg);
-            DrawText(c, fonts_, label,
-                     Rect(pill.x + S(7), pill.y, pill.w - S(14), pill.h), toneColor, S(10.5f),
-                     true);
-            if (!t->repeat.empty()) {
-                float rx = pill.x + pill.w + S(8);
-                if (rx + S(38) <= textRight) {
-                    DrawText(c, fonts_, L"\xE8EE", Rect(rx, pill.y, S(14), pill.h), p.accent,
-                             S(10), false, TextAlign::Center, false, true);
-                    DrawText(c, fonts_, RepeatShort(t->repeat),
-                             Rect(rx + S(15), pill.y, S(32), pill.h), p.accent, S(9.5f), true);
-                }
+        if (!t->repeat.empty()) {
+            float rx = textX + dateW + S(8);
+            if (rx + S(38) <= textRight) {
+                DrawText(c, fonts_, L"\xE8EE", Rect(rx, hit.row.y + S(29), S(14), S(20)),
+                         p.accent, S(10), false, TextAlign::Center, false, true);
+                DrawText(c, fonts_, RepeatShort(t->repeat),
+                         Rect(rx + S(15), hit.row.y + S(29), S(32), S(20)), p.accent, S(9.5f),
+                         true);
             }
         }
         if (completeT > 0) {
