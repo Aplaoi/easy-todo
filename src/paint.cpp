@@ -6,53 +6,61 @@ using namespace Gdiplus;
 
 Palette LightPalette() {
     Palette p;
-    p.card = Color(246, 250, 251, 253);
-    p.cardSolid = Color(255, 250, 251, 253);
-    p.border = Color(255, 226, 230, 238);
-    p.text = Color(255, 29, 34, 45);
-    p.subtext = Color(255, 112, 121, 137);
-    p.faint = Color(255, 153, 160, 174);
-    p.accent = Color(255, 66, 111, 246);
-    p.accentSoft = Color(255, 232, 238, 255);
-    p.hover = Color(255, 238, 242, 249);
-    p.field = Color(255, 241, 244, 249);
-    p.divider = Color(255, 233, 236, 242);
-    p.overdue = Color(255, 220, 64, 74);
-    p.soon = Color(255, 231, 132, 44);
-    p.exam = Color(255, 124, 58, 237);
-    p.examSoft = Color(255, 243, 232, 255);
-    p.normal = Color(255, 88, 101, 124);
-    p.done = Color(255, 46, 166, 112);
+    p.card = Color(250, 255, 255, 255);
+    p.cardSolid = Color(255, 255, 255, 255);
+    p.border = Color(255, 218, 228, 238);
+    p.text = Color(255, 15, 23, 34);
+    p.subtext = Color(255, 92, 107, 126);
+    p.faint = Color(255, 138, 153, 170);
+    p.accent = Color(255, 14, 165, 198);
+    p.accentSoft = Color(255, 230, 248, 252);
+    p.blue = Color(255, 59, 111, 245);
+    p.cyanSoft = Color(255, 221, 247, 252);
+    p.track = Color(255, 227, 235, 243);
+    p.closeHover = Color(255, 253, 235, 236);
+    p.hover = Color(255, 238, 244, 249);
+    p.field = Color(255, 242, 246, 250);
+    p.divider = Color(255, 228, 235, 242);
+    p.overdue = Color(255, 217, 59, 72);
+    p.soon = Color(255, 199, 119, 0);
+    p.exam = Color(255, 109, 74, 224);
+    p.examSoft = Color(255, 240, 236, 255);
+    p.normal = Color(255, 92, 107, 126);
+    p.done = Color(255, 21, 154, 114);
     p.white = Color(255, 255, 255, 255);
-    p.toast = Color(245, 38, 43, 55);
-    p.banner = Color(255, 255, 243, 229);
-    p.bannerText = Color(255, 166, 92, 18);
+    p.toast = Color(248, 20, 32, 44);
+    p.banner = Color(255, 253, 242, 232);
+    p.bannerText = Color(255, 138, 75, 22);
     return p;
 }
 
 Palette DarkPalette() {
     Palette p;
-    p.card = Color(246, 29, 32, 40);
-    p.cardSolid = Color(255, 29, 32, 40);
-    p.border = Color(255, 52, 57, 69);
-    p.text = Color(255, 237, 240, 246);
-    p.subtext = Color(255, 154, 162, 176);
-    p.faint = Color(255, 112, 120, 134);
-    p.accent = Color(255, 116, 148, 255);
-    p.accentSoft = Color(255, 44, 55, 86);
-    p.hover = Color(255, 39, 44, 55);
-    p.field = Color(255, 36, 40, 50);
-    p.divider = Color(255, 47, 52, 64);
-    p.overdue = Color(255, 255, 107, 110);
-    p.soon = Color(255, 245, 165, 74);
-    p.exam = Color(255, 192, 132, 252);
-    p.examSoft = Color(255, 61, 43, 88);
-    p.normal = Color(255, 168, 177, 192);
-    p.done = Color(255, 72, 199, 142);
+    p.card = Color(250, 17, 26, 36);
+    p.cardSolid = Color(255, 17, 26, 36);
+    p.border = Color(255, 38, 56, 74);
+    p.text = Color(255, 242, 247, 252);
+    p.subtext = Color(255, 155, 168, 183);
+    p.faint = Color(255, 100, 115, 135);
+    p.accent = Color(255, 79, 215, 255);
+    p.accentSoft = Color(255, 18, 49, 61);
+    p.blue = Color(255, 92, 141, 255);
+    p.cyanSoft = Color(255, 19, 50, 62);
+    p.track = Color(255, 26, 38, 52);
+    p.closeHover = Color(255, 58, 32, 40);
+    p.hover = Color(255, 30, 43, 58);
+    p.field = Color(255, 23, 33, 45);
+    p.divider = Color(255, 31, 44, 58);
+    p.overdue = Color(255, 255, 93, 108);
+    p.soon = Color(255, 255, 181, 71);
+    p.exam = Color(255, 140, 107, 255);
+    p.examSoft = Color(255, 36, 31, 58);
+    p.normal = Color(255, 139, 153, 170);
+    p.done = Color(255, 68, 215, 168);
     p.white = Color(255, 255, 255, 255);
-    p.toast = Color(245, 12, 14, 20);
-    p.banner = Color(255, 63, 47, 26);
-    p.bannerText = Color(255, 255, 190, 120);
+    p.toast = Color(248, 12, 18, 26);
+    p.banner = Color(255, 43, 28, 20);
+    p.bannerText = Color(255, 255, 179, 138);
     return p;
 }
 
@@ -257,14 +265,14 @@ float MeasureText(Fonts& fonts, const std::wstring& text, float px, bool bold, b
 }
 
 void DrawShadow(Canvas& c, const Rect& card, float radius) {
-    for (int i = 9; i >= 1; --i) {
-        Rect r = card.Inflate((float)i * 0.9f);
-        r.y += i * 0.5f;
-        FillRound(c, r, radius + i * 0.7f, Color(5, 0, 0, 0));
+    for (int i = 12; i >= 1; --i) {
+        Rect r = card.Inflate((float)i * 1.1f);
+        r.y += i * 0.8f;
+        FillRound(c, r, radius + i * 0.8f, Color(4, 0, 0, 0));
     }
     Rect contact = card;
-    contact.y += 2.0f;
-    FillRound(c, contact, radius, Color(22, 0, 0, 0));
+    contact.y += 3.0f;
+    FillRound(c, contact, radius, Color(12, 0, 0, 0));
 }
 
 }  // namespace hf

@@ -13,6 +13,10 @@ struct Palette {
     Gdiplus::Color faint;
     Gdiplus::Color accent;
     Gdiplus::Color accentSoft;
+    Gdiplus::Color blue;
+    Gdiplus::Color cyanSoft;
+    Gdiplus::Color track;
+    Gdiplus::Color closeHover;
     Gdiplus::Color hover;
     Gdiplus::Color field;
     Gdiplus::Color divider;
