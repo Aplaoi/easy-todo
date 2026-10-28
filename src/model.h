@@ -12,6 +12,7 @@ struct Task {
     std::wstring createdAt;    // ISO local datetime
     std::wstring completedAt;  // ISO local datetime, empty when not done
     std::wstring repeat;       // empty / daily / weekly / monthly
+    std::wstring kind = L"homework";  // homework / exam
 };
 
 struct BallSettings {

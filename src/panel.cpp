@@ -242,6 +242,8 @@ void App::BuildLayout() {
         layout_.chipTomorrow = Rect(x + S(86), card.y + S(216), S(78), S(28));
         layout_.chipWeek = Rect(x + S(172), card.y + S(216), S(78), S(28));
         layout_.repeatField = Rect(x + S(44), card.y + S(252), S(150), S(30));
+        layout_.typeExam = Rect(card.x + card.w - S(18) - S(54), card.y + S(62), S(54), S(24));
+        layout_.typeHomework = Rect(layout_.typeExam.x - S(58), card.y + S(62), S(54), S(24));
         layout_.btnCancel = Rect(card.x + card.w - S(18) - S(84), card.y + card.h - S(56), S(84),
                                  S(38));
         layout_.btnSave =
@@ -393,6 +395,8 @@ App::Control App::HitTest(POINT pt, std::wstring* taskId) const {
         if (layout_.chipToday.Contains(pt)) return C_CHIP_TODAY;
         if (layout_.chipTomorrow.Contains(pt)) return C_CHIP_TOMORROW;
         if (layout_.chipWeek.Contains(pt)) return C_CHIP_WEEK;
+        if (layout_.typeHomework.Contains(pt)) return C_TYPE_HOMEWORK;
+        if (layout_.typeExam.Contains(pt)) return C_TYPE_EXAM;
         if (layout_.repeatField.Contains(pt)) return C_REPEAT;
         return C_NONE;
     }
@@ -595,7 +599,7 @@ void App::DrawFooter(Canvas& c, const Palette& p) {
 
 void App::DrawPanelList(Canvas& c, const Palette& p) {
     Rect card = layout_.card;
-    DrawText(c, fonts_, L"待完成作业", Rect(card.x + S(18), card.y + S(12), S(160), S(30)), p.text,
+    DrawText(c, fonts_, L"待完成事项", Rect(card.x + S(18), card.y + S(12), S(160), S(30)), p.text,
              S(15), true);
     DrawHeaderButtons(c, p);
     DrawLine(c, card.x + S(18), card.y + S(52), card.x + card.w - S(18), card.y + S(52), p.divider,
@@ -622,11 +626,11 @@ void App::DrawPanelList(Canvas& c, const Palette& p) {
         FillCircle(c, cx, cy, S(26), p.accentSoft);
         DrawText(c, fonts_, L"\xE73E", Rect(cx - S(18), cy - S(18), S(36), S(36)), p.accent, S(23),
                  false, TextAlign::Center, false, true);
-        DrawText(c, fonts_, L"暂无待完成作业", Rect(content.x, cy + S(38), content.w, S(26)), p.text,
+        DrawText(c, fonts_, L"暂无待完成事项", Rect(content.x, cy + S(38), content.w, S(26)), p.text,
                  S(13), true, TextAlign::Center);
         DrawText(c, fonts_, L"添加一条，让今天更有条理", Rect(content.x, cy + S(62), content.w, S(22)),
                  p.subtext, S(11), false, TextAlign::Center);
-        Button(c, fonts_, layout_.emptyAdd, L"添加作业", true, hoverControl_ == C_EMPTY_ADD, p, S(10), S(13));
+        Button(c, fonts_, layout_.emptyAdd, L"添加任务", true, hoverControl_ == C_EMPTY_ADD, p, S(10), S(13));
         DrawFooter(c, p);
         return;
     }
@@ -642,38 +646,48 @@ void App::DrawPanelList(Canvas& c, const Palette& p) {
         bool rowHover = hoverTaskId_ == t->id &&
                         (hoverControl_ == C_ROW || hoverControl_ == C_CHECKBOX ||
                          hoverControl_ == C_EDIT);
+        bool exam = t->kind == L"exam";
+        Color examColor = p.exam;
         if (rowHover) FillRound(c, hit.row.Inflate(-S(2)), S(10), p.hover);
+        if (exam)
+            FillRound(c, Rect(hit.row.x + S(1), hit.row.y + S(10), S(3), hit.row.h - S(20)),
+                      S(1.5f), examColor);
 
         float completeT = 0.0f;
         if (completing_ && t->id == completingId_)
             completeT = std::clamp((NowMs() - completeStart_) / 320.0f, 0.0f, 1.0f);
 
-        Color checkBorder = (rowHover || completeT > 0) ? p.accent : p.faint;
+        Color accentColor = exam ? p.exam : p.accent;
+        Color checkBorder = (rowHover || completeT > 0)
+                                ? accentColor
+                                : (exam ? Color(170, p.exam.GetR(), p.exam.GetG(), p.exam.GetB())
+                                        : p.faint);
         FillCircle(c, hit.checkbox.centerX(), hit.checkbox.centerY(), S(9), Color(0, 0, 0, 0));
         StrokeRound(c, hit.checkbox, S(10), checkBorder, 1.5f);
         if (rowHover || completeT > 0)
             DrawText(c, fonts_, L"\xE73E",
-                     Rect(hit.checkbox.x + S(3), hit.checkbox.y + S(3), S(14), S(14)), p.accent,
-                     S(10), false, TextAlign::Center, false, true);
+                     Rect(hit.checkbox.x + S(3), hit.checkbox.y + S(3), S(14), S(14)),
+                     accentColor, S(10), false, TextAlign::Center, false, true);
 
         float textX = hit.checkbox.x + S(30);
         float textRight = hit.edit.x - S(8);
         float dayW = S(58);
         float textW = textRight - textX - dayW - S(8);
         int titleAlpha = (int)(255.0f * (1.0f - 0.35f * completeT));
-        Color titleColor((BYTE)titleAlpha, p.text.GetR(), p.text.GetG(), p.text.GetB());
+        Color titleBase = exam ? p.exam : p.text;
+        Color titleColor((BYTE)titleAlpha, titleBase.GetR(), titleBase.GetG(), titleBase.GetB());
         DrawText(c, fonts_, t->title, Rect(textX, hit.row.y + S(7), textW, S(24)), titleColor,
                  S(13.5f), false, TextAlign::Left);
         IconButton(c, fonts_, hit.edit, L"\xE70F",
                    hoverTaskId_ == t->id && hoverControl_ == C_EDIT,
-                   hoverTaskId_ == t->id && hoverControl_ == C_EDIT ? p.accent : p.faint, p.hover,
-                   S(12));
+                   hoverTaskId_ == t->id && hoverControl_ == C_EDIT ? accentColor : p.faint,
+                   p.hover, S(12));
         DueTone tone = DueTone::Normal;
         DueLabel(t->dueDay, today, tone);
         int64_t diff = t->dueDay - today;
         Color toneColor = tone == DueTone::Overdue ? p.overdue
                           : tone == DueTone::Soon  ? p.soon
-                                                   : p.accent;
+                                                   : accentColor;
         std::wstring big = diff == 0 ? L"今" : Format(L"%lld", (long long)diff);
         std::wstring unit = L"天";
         float bigW = MeasureText(fonts_, big, S(19));
@@ -687,11 +701,19 @@ void App::DrawPanelList(Canvas& c, const Palette& p) {
                  S(9.5f), true, TextAlign::Left);
 
         std::wstring dateText = L"截止 " + FormatMMDD(t->dueDay);
+        float lineX = textX;
+        if (exam) {
+            float badgeW = S(44);
+            Rect badge(lineX, hit.row.y + S(29), badgeW, S(18));
+            FillRound(c, badge, S(9), p.examSoft);
+            DrawText(c, fonts_, L"考试", badge, p.exam, S(9.5f), true, TextAlign::Center);
+            lineX += badgeW + S(6);
+        }
         float dateW = MeasureText(fonts_, dateText, S(10.5f));
         DrawText(c, fonts_, dateText,
-                 Rect(textX, hit.row.y + S(31), dateW + S(4), S(18)), p.subtext, S(10.5f));
+                 Rect(lineX, hit.row.y + S(31), dateW + S(4), S(18)), p.subtext, S(10.5f));
         if (!t->repeat.empty()) {
-            float rx = textX + dateW + S(8);
+            float rx = lineX + dateW + S(8);
             if (rx + S(38) <= textRight) {
                 DrawText(c, fonts_, L"\xE8EE", Rect(rx, hit.row.y + S(29), S(14), S(20)),
                          p.accent, S(10), false, TextAlign::Center, false, true);
@@ -724,22 +746,37 @@ void App::DrawPanelList(Canvas& c, const Palette& p) {
 
 void App::DrawPanelForm(Canvas& c, const Palette& p) {
     Rect card = layout_.card;
+    bool exam = formKind_ == L"exam";
     IconButton(c, fonts_, layout_.btnBack, L"\xE72B", hoverControl_ == C_BACK, p.subtext, p.hover,
                S(14));
-    DrawText(c, fonts_, formEditing_ ? L"编辑作业" : L"新增作业",
+    DrawText(c, fonts_,
+             formEditing_ ? (exam ? L"编辑考试" : L"编辑作业")
+                          : (exam ? L"新增考试" : L"新增作业"),
              Rect(card.x + S(52), card.y + S(12), card.w - S(70), S(30)), p.text, S(15), true);
     DrawLine(c, card.x + S(18), card.y + S(52), card.x + card.w - S(18), card.y + S(52), p.divider,
              1.0f);
 
-    DrawText(c, fonts_, L"作业标题", Rect(card.x + S(18), card.y + S(64), card.w - S(36), S(18)),
-             p.subtext, S(11));
+    DrawText(c, fonts_, exam ? L"考试名称" : L"作业标题",
+             Rect(card.x + S(18), card.y + S(64), card.w - S(140), S(18)), p.subtext, S(11));
+
+    auto drawType = [&](const Rect& r, const std::wstring& text, bool active, bool isExam,
+                        int control) {
+        Color bg = active ? (isExam ? p.examSoft : p.accentSoft) : p.field;
+        Color fg = active ? (isExam ? p.exam : p.accent) : p.subtext;
+        if (hoverControl_ == control && !active) bg = p.hover;
+        FillRound(c, r, S(9), bg);
+        DrawText(c, fonts_, text, r, fg, S(10.5f), active, TextAlign::Center);
+    };
+    drawType(layout_.typeHomework, L"作业", !exam, false, C_TYPE_HOMEWORK);
+    drawType(layout_.typeExam, L"考试", exam, true, C_TYPE_EXAM);
 
     Rect field = layout_.titleField;
     FillRound(c, field, S(10), p.field);
     StrokeRound(c, field, S(10), p.border, 1.0f);
     if (GetFocus() == panel_)
         StrokeRound(c, field, S(10),
-                    Color(170, p.accent.GetR(), p.accent.GetG(), p.accent.GetB()), 1.4f);
+                    Color(170, (exam ? p.exam : p.accent).GetR(), (exam ? p.exam : p.accent).GetG(),
+                          (exam ? p.exam : p.accent).GetB()), 1.4f);
 
     float fontPx = S(14);
     float innerW = field.w - S(28);
@@ -753,7 +790,7 @@ void App::DrawPanelForm(Canvas& c, const Palette& p) {
 
     c.g().SetClip(RectF(field.x + S(10), field.y + S(2), field.w - S(20), field.h - S(4)));
     if (formTitle_.empty() && imeComp_.empty()) {
-        DrawText(c, fonts_, L"例如：数学卷子",
+        DrawText(c, fonts_, exam ? L"例如：高等数学期末考试" : L"例如：数学卷子",
                  Rect(textX + S(1), field.y, field.w - S(24), field.h), p.faint, fontPx);
     } else {
         std::wstring display =
@@ -823,23 +860,29 @@ void App::DrawPanelForm(Canvas& c, const Palette& p) {
     Rect repeat = layout_.repeatField;
     DrawText(c, fonts_, L"重复", Rect(card.x + S(18), repeat.y, S(38), repeat.h), p.subtext,
              S(10.5f));
-    FillRound(c, repeat, S(9), hoverControl_ == C_REPEAT ? p.hover : p.field);
+    FillRound(c, repeat, S(9), exam ? p.field : (hoverControl_ == C_REPEAT ? p.hover : p.field));
     StrokeRound(c, repeat, S(9), p.border, 1.0f);
-    std::wstring repeatText = RepeatShort(formRepeat_);
-    if (formRepeat_ == L"weekly") repeatText = L"每" + WeekdayCN(formDue_);
-    DrawText(c, fonts_, repeatText,
-             Rect(repeat.x + S(12), repeat.y, repeat.w - S(34), repeat.h), p.text, S(11));
-    DrawText(c, fonts_, L"\xE8EE",
-             Rect(repeat.x + repeat.w - S(24), repeat.y, S(16), repeat.h), p.faint, S(10), false,
-             TextAlign::Center, false, true);
+    if (exam) {
+        DrawText(c, fonts_, L"考试不重复",
+                 Rect(repeat.x + S(12), repeat.y, repeat.w - S(24), repeat.h), p.faint, S(11));
+    } else {
+        std::wstring repeatText = RepeatShort(formRepeat_);
+        if (formRepeat_ == L"weekly") repeatText = L"每" + WeekdayCN(formDue_);
+        DrawText(c, fonts_, repeatText,
+                 Rect(repeat.x + S(12), repeat.y, repeat.w - S(34), repeat.h), p.text, S(11));
+        DrawText(c, fonts_, L"\xE8EE",
+                 Rect(repeat.x + repeat.w - S(24), repeat.y, S(16), repeat.h), p.faint, S(10),
+                 false, TextAlign::Center, false, true);
+    }
 
     if (!formError_.empty()) {
         DrawText(c, fonts_, formError_,
                  Rect(card.x + S(18), card.y + S(292), card.w - S(36), S(20)), p.overdue, S(10.5f));
     } else {
         DrawText(c, fonts_,
-                 formRepeat_.empty() ? L"仅按自然日计算，不设置具体时间"
-                                     : L"完成后自动生成下一次",
+                 exam ? L"考试单独标记颜色，完成后进入归档"
+                      : (formRepeat_.empty() ? L"仅按自然日计算，不设置具体时间"
+                                             : L"完成后自动生成下一次"),
                  Rect(card.x + S(18), card.y + S(292), card.w - S(36), S(20)), p.faint, S(10.5f));
     }
 
@@ -943,11 +986,15 @@ void App::DrawPanelArchive(Canvas& c, const Palette& p) {
             hit.row.y > layout_.content.y + layout_.content.h)
             continue;
         bool hover = hoverTaskId_ == t->id;
+        bool exam = t->kind == L"exam";
         if (hover) FillRound(c, hit.row.Inflate(-S(2)), S(10), p.hover);
+        if (exam)
+            FillRound(c, Rect(hit.row.x + S(2), hit.row.y + S(10), S(3), hit.row.h - S(20)),
+                      S(1.5f), p.exam);
         float textX = hit.row.x + S(14);
         DrawText(c, fonts_, t->title, Rect(textX, hit.row.y + S(9), hit.row.w - S(90), S(24)),
-                 p.text, S(13.5f));
-        DrawText(c, fonts_, CompletedLabel(t->completedAt),
+                 exam ? p.exam : p.text, S(13.5f));
+        DrawText(c, fonts_, (exam ? L"考试 · " : L"") + CompletedLabel(t->completedAt),
                  Rect(textX, hit.row.y + S(33), hit.row.w - S(90), S(18)), p.subtext, S(11));
         if (hoverControl_ == C_RESTORE && hoverTaskId_ == t->id)
             FillRound(c, hit.action1, S(8), p.accentSoft);
@@ -1432,7 +1479,17 @@ void App::OnPanelClick(POINT pt) {
                 formDue_ = TodayLocalDay() + 7;
                 PaintPanel();
                 return;
+            case C_TYPE_HOMEWORK:
+                formKind_ = L"homework";
+                PaintPanel();
+                return;
+            case C_TYPE_EXAM:
+                formKind_ = L"exam";
+                formRepeat_.clear();
+                PaintPanel();
+                return;
             case C_REPEAT:
+                if (formKind_ == L"exam") return;
                 if (formRepeat_.empty())
                     formRepeat_ = L"daily";
                 else if (formRepeat_ == L"daily")
@@ -1839,12 +1896,14 @@ void App::OpenForm(const Task* task) {
         formTitle_ = task->title;
         formDue_ = task->dueDay;
         formRepeat_ = task->repeat;
+        formKind_ = task->kind == L"exam" ? L"exam" : L"homework";
     } else {
         formEditing_ = false;
         formId_.clear();
         formTitle_.clear();
         formDue_ = TodayLocalDay();
         formRepeat_.clear();
+        formKind_ = L"homework";
     }
     formError_.clear();
     imeComp_.clear();
@@ -1900,6 +1959,7 @@ void App::CancelForm() {
     formTitle_.clear();
     formError_.clear();
     formRepeat_.clear();
+    formKind_ = L"homework";
     imeComp_.clear();
     KillTimer(panel_, TIMER_CARET);
     caretTimerOn_ = false;
@@ -1910,15 +1970,17 @@ void App::CancelForm() {
 void App::SaveForm() {
     std::wstring title = Trim(formTitle_);
     if (title.empty()) {
-        formError_ = L"请输入作业标题";
+        formError_ = formKind_ == L"exam" ? L"请输入考试名称" : L"请输入作业标题";
         PaintPanel();
         return;
     }
+    if (formKind_ == L"exam") formRepeat_.clear();
     if (formEditing_) {
         if (Task* t = FindTask(formId_)) {
             t->title = title;
             t->dueDay = formDue_;
             t->repeat = formRepeat_;
+            t->kind = formKind_;
         }
     } else {
         Task t;
@@ -1926,6 +1988,7 @@ void App::SaveForm() {
         t.title = title;
         t.dueDay = formDue_;
         t.repeat = formRepeat_;
+        t.kind = formKind_;
         t.done = false;
         t.createdAt = LocalNowISO();
         tasks_.push_back(std::move(t));
@@ -1938,6 +2001,7 @@ void App::SaveForm() {
     formTitle_.clear();
     formError_.clear();
     formRepeat_.clear();
+    formKind_ = L"homework";
     imeComp_.clear();
     KillTimer(panel_, TIMER_CARET);
     caretTimerOn_ = false;
@@ -2352,7 +2416,7 @@ void App::FinishComplete() {
     if (Task* t = FindTask(id)) {
         t->done = true;
         t->completedAt = LocalNowISO();
-        if (!t->repeat.empty()) {
+        if (!t->repeat.empty() && t->kind != L"exam") {
             int64_t nextDue = NextRepeatDay(t->dueDay, t->repeat);
             int64_t today = TodayLocalDay();
             for (int guard = 0; nextDue <= today && guard < 500; ++guard)
@@ -2362,6 +2426,7 @@ void App::FinishComplete() {
             next.title = t->title;
             next.dueDay = nextDue;
             next.repeat = t->repeat;
+            next.kind = t->kind;
             next.createdAt = LocalNowISO();
             tasks_.push_back(std::move(next));
             toast = L"已完成，下次 " + FormatMMDD(nextDue);

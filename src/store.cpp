@@ -174,6 +174,8 @@ bool Store::ParseTasksText(const std::string& utf8, std::vector<Task>& tasks, st
         t.repeat = item.GetString(L"repeat");
         if (t.repeat != L"daily" && t.repeat != L"weekly" && t.repeat != L"monthly")
             t.repeat.clear();
+        t.kind = item.GetString(L"kind", L"homework");
+        if (t.kind != L"exam") t.kind = L"homework";
         if (t.id.empty() || t.title.empty() || !ParseISODate(due, t.dueDay)) {
             ++skipped;
             continue;
@@ -376,6 +378,7 @@ bool Store::SaveTasks(const std::vector<Task>& tasks, std::wstring& error) {
         item.Set(L"priority", JsonStr(L"normal"));
         item.Set(L"createdAt", JsonStr(t.createdAt.empty() ? LocalNowISO() : t.createdAt));
         if (!t.repeat.empty()) item.Set(L"repeat", JsonStr(t.repeat));
+        if (t.kind == L"exam") item.Set(L"kind", JsonStr(L"exam"));
         if (t.completedAt.empty())
             item.object[L"completedAt"] = JsonValue{};
         else

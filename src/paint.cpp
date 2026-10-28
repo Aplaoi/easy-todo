@@ -19,6 +19,8 @@ Palette LightPalette() {
     p.divider = Color(255, 233, 236, 242);
     p.overdue = Color(255, 220, 64, 74);
     p.soon = Color(255, 231, 132, 44);
+    p.exam = Color(255, 124, 58, 237);
+    p.examSoft = Color(255, 243, 232, 255);
     p.normal = Color(255, 88, 101, 124);
     p.done = Color(255, 46, 166, 112);
     p.white = Color(255, 255, 255, 255);
@@ -43,6 +45,8 @@ Palette DarkPalette() {
     p.divider = Color(255, 47, 52, 64);
     p.overdue = Color(255, 255, 107, 110);
     p.soon = Color(255, 245, 165, 74);
+    p.exam = Color(255, 192, 132, 252);
+    p.examSoft = Color(255, 61, 43, 88);
     p.normal = Color(255, 168, 177, 192);
     p.done = Color(255, 72, 199, 142);
     p.white = Color(255, 255, 255, 255);

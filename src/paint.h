@@ -18,6 +18,8 @@ struct Palette {
     Gdiplus::Color divider;
     Gdiplus::Color overdue;
     Gdiplus::Color soon;
+    Gdiplus::Color exam;
+    Gdiplus::Color examSoft;
     Gdiplus::Color normal;
     Gdiplus::Color done;
     Gdiplus::Color white;
