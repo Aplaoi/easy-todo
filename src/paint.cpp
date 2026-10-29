@@ -71,8 +71,12 @@ Font* Fonts::Get(float px, bool bold, bool icon) {
     auto it = cache_.find(key);
     if (it != cache_.end()) return it->second.get();
     FontFamily* family = icon ? &icon_ : &ui_;
+    if (!icon && ui_.GetLastStatus() != Ok) family = &uiFallback_;
     int style = bold ? FontStyleBold : FontStyleRegular;
     auto font = std::make_unique<Font>(family, px, style, UnitPixel);
+    if (!icon && font->GetLastStatus() != Ok) {
+        font = std::make_unique<Font>(&uiFallback_, px, style, UnitPixel);
+    }
     Font* raw = font.get();
     cache_[key] = std::move(font);
     return raw;
@@ -113,7 +117,7 @@ Canvas::Canvas(int width, int height) : width_(width), height_(height) {
     }
     graphics_->SetSmoothingMode(SmoothingModeAntiAlias);
     graphics_->SetPixelOffsetMode(PixelOffsetModeHalf);
-    graphics_->SetTextRenderingHint(TextRenderingHintAntiAlias);
+    graphics_->SetTextRenderingHint(TextRenderingHintAntiAliasGridFit);
     graphics_->SetInterpolationMode(InterpolationModeHighQualityBicubic);
     graphics_->Clear(Color(0, 0, 0, 0));
     ok_ = true;

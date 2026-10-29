@@ -42,7 +42,8 @@ public:
 
 private:
     std::map<int, std::unique_ptr<Gdiplus::Font>> cache_;
-    Gdiplus::FontFamily ui_{L"Microsoft YaHei UI"};
+    Gdiplus::FontFamily ui_{L"Segoe UI Variable Text"};
+    Gdiplus::FontFamily uiFallback_{L"Microsoft YaHei UI"};
     Gdiplus::FontFamily icon_{L"Segoe MDL2 Assets"};
 };
 

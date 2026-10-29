@@ -605,26 +605,26 @@ int App::DesiredCardHeight() const {
         case View::List: {
             int rows = (int)SortedTodo().size();
             if (rows < 1) rows = 1;
-            logical = 56.0f + 56.0f + rows * 52.0f + 44.0f;
-            if (!saveError_.empty() || !dataNotice_.empty()) logical += 42.0f;
-            logical = std::clamp(logical, 320.0f, 680.0f);
+            logical = 60.0f + 60.0f + rows * 58.0f + 8.0f + 48.0f;
+            if (!saveError_.empty() || !dataNotice_.empty()) logical += 44.0f;
+            logical = std::clamp(logical, 340.0f, 760.0f);
             break;
         }
         case View::Form:
-            logical = 412.0f;
+            logical = 444.0f;
             break;
         case View::DatePicker:
-            logical = 432.0f;
+            logical = 448.0f;
             break;
         case View::Archive: {
             int rows = (int)SortedArchive().size();
             if (rows < 1) rows = 1;
-            logical = 56.0f + rows * 56.0f + 24.0f;
-            logical = std::clamp(logical, 320.0f, 520.0f);
+            logical = 60.0f + rows * 60.0f + 28.0f;
+            logical = std::clamp(logical, 340.0f, 560.0f);
             break;
         }
         case View::Settings:
-            logical = 540.0f;
+            logical = 560.0f;
             break;
     }
     int height = Px(logical);
@@ -673,7 +673,7 @@ void App::ComputePanelWindowPos(int w, int h, int& x, int& y) const {
 
 void App::LayoutPanelWindow(bool force) {
     if (!panel_) return;
-    int newW = Px(348.0f) + 2 * shadowPx_;
+    int newW = Px(360.0f) + 2 * shadowPx_;
     int newCardH = DesiredCardHeight();
     int newH = newCardH + 2 * shadowPx_;
     if (!force && newW == panelW_ && newH == panelH_) {

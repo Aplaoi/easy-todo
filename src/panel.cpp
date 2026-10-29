@@ -6,13 +6,13 @@ using namespace Gdiplus;
 
 namespace {
 
-constexpr float kPanelWidth = 348.0f;
-constexpr float kHeaderHeight = 56.0f;
-constexpr float kProgressHeight = 56.0f;
-constexpr float kFooterHeight = 44.0f;
-constexpr float kRowHeight = 52.0f;
-constexpr float kArchiveRowHeight = 56.0f;
-constexpr float kSettingRowHeight = 44.0f;
+constexpr float kPanelWidth = 360.0f;
+constexpr float kHeaderHeight = 60.0f;
+constexpr float kProgressHeight = 60.0f;
+constexpr float kFooterHeight = 48.0f;
+constexpr float kRowHeight = 58.0f;
+constexpr float kArchiveRowHeight = 60.0f;
+constexpr float kSettingRowHeight = 46.0f;
 constexpr int kSettingCount = 15;
 constexpr UINT kTrayIdLocal = 1;
 constexpr UINT kMenuEdit = 2001;
@@ -183,101 +183,101 @@ void App::BuildLayout() {
     layout_.card = card;
     layout_.header = Rect(card.x, card.y, card.w, S(kHeaderHeight));
 
-    float bs = S(30);
-    float gap = S(2);
-    float right = card.x + card.w - S(14);
-    layout_.btnClose = Rect(right - bs, card.y + S(13), bs, bs);
+    float bs = S(32);
+    float gap = S(3);
+    float right = card.x + card.w - S(16);
+    layout_.btnClose = Rect(right - bs, card.y + S(14), bs, bs);
     right -= bs + gap;
-    layout_.btnSettings = Rect(right - bs, card.y + S(13), bs, bs);
+    layout_.btnSettings = Rect(right - bs, card.y + S(14), bs, bs);
     right -= bs + gap;
-    layout_.btnPin = Rect(right - bs, card.y + S(13), bs, bs);
+    layout_.btnPin = Rect(right - bs, card.y + S(14), bs, bs);
     right -= bs + gap;
-    layout_.btnAdd = Rect(right - bs, card.y + S(13), bs, bs);
-    layout_.btnBack = Rect(card.x + S(12), card.y + S(13), bs, bs);
+    layout_.btnAdd = Rect(right - bs, card.y + S(14), bs, bs);
+    layout_.btnBack = Rect(card.x + S(14), card.y + S(14), bs, bs);
 
     if (view_ == View::List) {
         bool hasBanner = !saveError_.empty() || !dataNotice_.empty();
         float progressBottom = card.y + S(kHeaderHeight) + S(kProgressHeight);
         float bannerH = 0.0f;
         if (hasBanner) {
-            layout_.banner = Rect(card.x + S(14), progressBottom + S(4), card.w - S(28), S(34));
-            bannerH = S(42);
+            layout_.banner = Rect(card.x + S(16), progressBottom + S(4), card.w - S(32), S(36));
+            bannerH = S(44);
         }
         float contentTop = progressBottom + bannerH;
         float contentBottom = card.y + card.h - S(kFooterHeight);
         layout_.content =
-            Rect(card.x + S(10), contentTop, card.w - S(20), contentBottom - contentTop);
+            Rect(card.x + S(12), contentTop, card.w - S(24), contentBottom - contentTop);
         layout_.footer = Rect(card.x, card.y + card.h - S(kFooterHeight), card.w, S(kFooterHeight));
         layout_.archiveLink =
-            Rect(card.x + S(18), layout_.footer.y, S(170), layout_.footer.h);
+            Rect(card.x + S(20), layout_.footer.y, S(180), layout_.footer.h);
     } else {
-        layout_.content = Rect(card.x + S(10), card.y + S(kHeaderHeight), card.w - S(20),
-                               card.h - S(kHeaderHeight) - S(12));
+        layout_.content = Rect(card.x + S(12), card.y + S(kHeaderHeight), card.w - S(24),
+                               card.h - S(kHeaderHeight) - S(14));
     }
 
     ClampScroll();
 
     if (view_ == View::List) {
         auto todo = SortedTodo();
-        float y = layout_.content.y + S(2) - listScroll_;
+        float y = layout_.content.y + S(4) - listScroll_;
         for (const Task* t : todo) {
             RowHit hit;
             hit.id = t->id;
             hit.row = Rect(layout_.content.x, y, layout_.content.w, S(kRowHeight));
-            hit.checkbox = Rect(hit.row.x + S(12), hit.row.y + S(16), S(20), S(20));
-            hit.edit = Rect(hit.row.x + hit.row.w - S(40), hit.row.y + S(12), S(28), S(28));
+            hit.checkbox = Rect(hit.row.x + S(14), hit.row.y + S(18), S(20), S(20));
+            hit.edit = Rect(hit.row.x + hit.row.w - S(40), hit.row.y + S(15), S(28), S(28));
             layout_.rows.push_back(hit);
             y += S(kRowHeight);
         }
-        layout_.emptyAdd = Rect(card.centerX() - S(75), layout_.content.y + layout_.content.h * 0.64f,
-                                S(150), S(36));
+        layout_.emptyAdd = Rect(card.centerX() - S(78), layout_.content.y + layout_.content.h * 0.64f,
+                                S(156), S(38));
     } else if (view_ == View::Form) {
-        float x = card.x + S(20);
-        float w = card.w - S(40);
-        layout_.titleField = Rect(x, card.y + S(84), w, S(40));
-        layout_.dateValue = Rect(x, card.y + S(156), w - S(76), S(40));
-        layout_.dateMinus = Rect(x + w - S(76), card.y + S(156), S(38), S(40));
-        layout_.datePlus = Rect(x + w - S(38), card.y + S(156), S(38), S(40));
-        layout_.chipToday = Rect(x, card.y + S(208), S(78), S(28));
-        layout_.chipTomorrow = Rect(x + S(86), card.y + S(208), S(78), S(28));
-        layout_.chipWeek = Rect(x + S(172), card.y + S(208), S(78), S(28));
-        layout_.repeatField = Rect(x + S(44), card.y + S(244), S(150), S(30));
-        layout_.typeExam = Rect(card.x + card.w - S(20) - S(54), card.y + S(58), S(54), S(26));
-        layout_.typeHomework = Rect(layout_.typeExam.x - S(58), card.y + S(58), S(54), S(26));
-        layout_.btnCancel = Rect(card.x + card.w - S(20) - S(84), card.y + card.h - S(54), S(84),
-                                 S(38));
+        float x = card.x + S(22);
+        float w = card.w - S(44);
+        layout_.titleField = Rect(x, card.y + S(96), w, S(44));
+        layout_.dateValue = Rect(x, card.y + S(176), w - S(80), S(44));
+        layout_.dateMinus = Rect(x + w - S(80), card.y + S(176), S(40), S(44));
+        layout_.datePlus = Rect(x + w - S(40), card.y + S(176), S(40), S(44));
+        layout_.chipToday = Rect(x, card.y + S(238), S(82), S(30));
+        layout_.chipTomorrow = Rect(x + S(90), card.y + S(238), S(82), S(30));
+        layout_.chipWeek = Rect(x + S(180), card.y + S(238), S(82), S(30));
+        layout_.repeatField = Rect(x + S(46), card.y + S(278), S(154), S(32));
+        layout_.typeExam = Rect(card.x + card.w - S(22) - S(58), card.y + S(64), S(58), S(28));
+        layout_.typeHomework = Rect(layout_.typeExam.x - S(62), card.y + S(64), S(58), S(28));
+        layout_.btnCancel = Rect(card.x + card.w - S(22) - S(88), card.y + card.h - S(58), S(88),
+                                 S(40));
         layout_.btnSave =
-            Rect(layout_.btnCancel.x - S(12) - S(132), layout_.btnCancel.y, S(132), S(38));
+            Rect(layout_.btnCancel.x - S(12) - S(140), layout_.btnCancel.y, S(140), S(40));
     } else if (view_ == View::Archive) {
-        layout_.btnClear = Rect(card.x + card.w - S(14) - S(52), card.y + S(13), S(52), S(28));
+        layout_.btnClear = Rect(card.x + card.w - S(16) - S(54), card.y + S(14), S(54), S(30));
         auto archive = SortedArchive();
-        float y = layout_.content.y + S(2) - archiveScroll_;
+        float y = layout_.content.y + S(4) - archiveScroll_;
         for (const Task* t : archive) {
             RowHit hit;
             hit.id = t->id;
             hit.row = Rect(layout_.content.x, y, layout_.content.w, S(kArchiveRowHeight));
-            hit.action1 = Rect(hit.row.x + hit.row.w - S(64), hit.row.y + S(14), S(28), S(28));
-            hit.action2 = Rect(hit.row.x + hit.row.w - S(32), hit.row.y + S(14), S(28), S(28));
+            hit.action1 = Rect(hit.row.x + hit.row.w - S(66), hit.row.y + S(16), S(28), S(28));
+            hit.action2 = Rect(hit.row.x + hit.row.w - S(34), hit.row.y + S(16), S(28), S(28));
             layout_.rows.push_back(hit);
             y += S(kArchiveRowHeight);
         }
     } else if (view_ == View::DatePicker) {
-        layout_.calPrev = Rect(card.x + S(18), card.y + S(64), S(32), S(32));
+        layout_.calPrev = Rect(card.x + S(20), card.y + S(68), S(34), S(34));
         layout_.calNext =
-            Rect(card.x + card.w - S(18) - S(32), card.y + S(64), S(32), S(32));
+            Rect(card.x + card.w - S(20) - S(34), card.y + S(68), S(34), S(34));
         layout_.calTitle =
-            Rect(card.x + S(56), card.y + S(64), card.w - S(112), S(32));
-        layout_.calToday = Rect(card.x + S(18), card.y + card.h - S(54), S(120), S(36));
+            Rect(card.x + S(60), card.y + S(68), card.w - S(120), S(34));
+        layout_.calToday = Rect(card.x + S(20), card.y + card.h - S(58), S(124), S(38));
         layout_.calCancel =
-            Rect(card.x + card.w - S(18) - S(90), card.y + card.h - S(54), S(90), S(36));
+            Rect(card.x + card.w - S(20) - S(92), card.y + card.h - S(58), S(92), S(38));
 
         int64_t first = DaysFromCivil(calYear_, calMonth_, 1);
         int weekday = (int)(((first + 3) % 7 + 7) % 7);  // Monday = 0
         int64_t start = first - weekday;
-        float gridX = card.x + S(28);
-        float gridY = card.y + S(126);
-        float cellW = (card.w - S(56)) / 7.0f;
-        float cellH = S(36);
+        float gridX = card.x + S(30);
+        float gridY = card.y + S(132);
+        float cellW = (card.w - S(60)) / 7.0f;
+        float cellH = S(38);
         layout_.calendarDays.reserve(42);
         for (int i = 0; i < 42; ++i) {
             int row = i / 7;
@@ -293,13 +293,13 @@ void App::BuildLayout() {
             float rowRight = row.x + row.w - S(12);
             if (IsToggleSetting(i)) {
                 layout_.settingValues.push_back(std::make_pair(
-                    i, Rect(rowRight - S(42), row.y + S(11), S(42), S(22))));
+                    i, Rect(rowRight - S(44), row.y + S(11), S(44), S(24))));
             } else if (IsDropdownSetting(i)) {
                 layout_.settingValues.push_back(std::make_pair(
-                    i, Rect(rowRight - S(132), row.y + S(7), S(132), S(30))));
+                    i, Rect(rowRight - S(136), row.y + S(7), S(136), S(32))));
             } else if (IsSliderSetting(i)) {
                 layout_.settingValues.push_back(std::make_pair(
-                    i, Rect(rowRight - S(164), row.y + S(16), S(100), S(12))));
+                    i, Rect(rowRight - S(168), row.y + S(16), S(104), S(14))));
             }
             y += S(kSettingRowHeight);
         }
@@ -314,14 +314,14 @@ void App::BuildLayout() {
             }
             auto options = SettingOptions(settingsDropdown_);
             if (anchor && !options.empty()) {
-                float itemH = S(34);
-                float width = S(152);
+                float itemH = S(36);
+                float width = S(160);
                 float total = itemH * (float)options.size() + S(8);
-                float x = card.x + card.w - S(20) - width;
+                float x = card.x + card.w - S(22) - width;
                 float yTop = anchor->y + anchor->h + S(6);
                 if (yTop + total > card.y + card.h - S(10))
                     yTop = anchor->y - total - S(6);
-                yTop = std::max(card.y + S(56), yTop);
+                yTop = std::max(card.y + S(60), yTop);
                 for (size_t k = 0; k < options.size(); ++k) {
                     layout_.dropdownOptions.push_back(std::make_pair(
                         (int)k, Rect(x + S(4), yTop + S(4) + itemH * (float)k, width - S(8),
@@ -572,7 +572,7 @@ void App::PaintPanelView(Canvas& c, const Palette& p) {
 }
 
 void App::DrawHeaderButtons(Canvas& c, const Palette& p) {
-    float iconPx = S(16);
+    float iconPx = S(18);
     IconButton(c, fonts_, layout_.btnAdd, L"\xE710", hoverControl_ == C_ADD,
                hoverControl_ == C_ADD ? p.accent : p.subtext, p.cyanSoft, iconPx);
     IconButton(c, fonts_, layout_.btnPin, panelPinned_ ? L"\xE77A" : L"\xE718",
@@ -587,23 +587,23 @@ void App::DrawHeaderButtons(Canvas& c, const Palette& p) {
 void App::DrawFooter(Canvas& c, const Palette& p) {
     Rect footer = layout_.footer;
     if (footer.h <= 0) return;
-    DrawLine(c, layout_.card.x + S(18), footer.y, layout_.card.x + layout_.card.w - S(18), footer.y,
+    DrawLine(c, layout_.card.x + S(20), footer.y, layout_.card.x + layout_.card.w - S(20), footer.y,
              p.divider, 1.0f);
     auto archive = SortedArchive();
     std::wstring text = archive.empty() ? L"查看归档" : Format(L"查看归档 · %d", (int)archive.size());
     Color color = hoverControl_ == C_ARCHIVE_LINK ? p.accent : p.subtext;
-    DrawText(c, fonts_, text, Rect(footer.x + S(18), footer.y, S(180), footer.h), color, S(11.5f),
+    DrawText(c, fonts_, text, Rect(footer.x + S(20), footer.y, S(190), footer.h), color, S(12),
              false, TextAlign::Left);
-    DrawText(c, fonts_, L"\xE76C", Rect(footer.x + footer.w - S(34), footer.y, S(16), footer.h),
-             color, S(11), false, TextAlign::Center, false, true);
+    DrawText(c, fonts_, L"\xE76C", Rect(footer.x + footer.w - S(36), footer.y, S(18), footer.h),
+             color, S(12), false, TextAlign::Center, false, true);
 }
 
 void App::DrawPanelList(Canvas& c, const Palette& p) {
     Rect card = layout_.card;
-    DrawText(c, fonts_, L"待完成事项", Rect(card.x + S(18), card.y + S(12), S(180), S(30)), p.text,
-             S(15), true);
+    DrawText(c, fonts_, L"待完成事项", Rect(card.x + S(20), card.y + S(14), S(190), S(32)), p.text,
+             S(16), true);
     DrawHeaderButtons(c, p);
-    DrawLine(c, card.x + S(18), card.y + S(55), card.x + card.w - S(18), card.y + S(55), p.divider,
+    DrawLine(c, card.x + S(20), card.y + S(59), card.x + card.w - S(20), card.y + S(59), p.divider,
              1.0f);
 
     int64_t today = TodayLocalDay();
@@ -615,22 +615,22 @@ void App::DrawPanelList(Canvas& c, const Palette& p) {
         if (t.done) ++todayDone;
     }
 
-    Rect progressArea(card.x + S(18), card.y + S(58), card.w - S(36), S(44));
+    Rect progressArea(card.x + S(20), card.y + S(62), card.w - S(40), S(48));
     DrawText(c, fonts_, L"今日任务",
-             Rect(progressArea.x, progressArea.y, S(100), S(18)), p.subtext, S(11));
+             Rect(progressArea.x, progressArea.y, S(110), S(20)), p.subtext, S(12));
     std::wstring progressText =
         todayTotal > 0 ? Format(L"%d/%d 已完成", todayDone, todayTotal) : L"今日无到期任务";
     DrawText(c, fonts_, progressText,
-             Rect(progressArea.x, progressArea.y, progressArea.w, S(18)), p.faint, S(11), false,
+             Rect(progressArea.x, progressArea.y, progressArea.w, S(20)), p.faint, S(11.5f), false,
              TextAlign::Right);
-    Rect track(progressArea.x, progressArea.y + S(28), progressArea.w, S(4));
+    Rect track(progressArea.x, progressArea.y + S(30), progressArea.w, S(4));
     FillRound(c, track, S(2), p.track);
     if (todayTotal > 0 && todayDone > 0) {
         float ratio = std::clamp((float)todayDone / (float)todayTotal, 0.0f, 1.0f);
         FillRound(c, Rect(track.x, track.y, std::max(S(4), track.w * ratio), track.h), S(2),
                   p.accent);
     }
-    DrawLine(c, card.x + S(18), card.y + S(106), card.x + card.w - S(18), card.y + S(106),
+    DrawLine(c, card.x + S(20), card.y + S(118), card.x + card.w - S(20), card.y + S(118),
              p.divider, 1.0f);
 
     if (!saveError_.empty() || !dataNotice_.empty()) {
@@ -646,7 +646,7 @@ void App::DrawPanelList(Canvas& c, const Palette& p) {
         DrawText(c, fonts_, text,
                  Rect(layout_.banner.x + S(12), layout_.banner.y, layout_.banner.w - S(24),
                       layout_.banner.h),
-                 fg, S(10.5f), false, TextAlign::Left);
+                 fg, S(11.5f), false, TextAlign::Left);
     }
 
     auto todo = SortedTodo();
@@ -654,15 +654,15 @@ void App::DrawPanelList(Canvas& c, const Palette& p) {
         Rect content = layout_.content;
         float cx = content.centerX();
         float cy = content.y + content.h * 0.34f;
-        FillCircle(c, cx, cy, S(26), p.cyanSoft);
-        DrawText(c, fonts_, L"\xE73E", Rect(cx - S(18), cy - S(18), S(36), S(36)), p.accent, S(23),
+        FillCircle(c, cx, cy, S(28), p.cyanSoft);
+        DrawText(c, fonts_, L"\xE73E", Rect(cx - S(18), cy - S(18), S(36), S(36)), p.accent, S(24),
                  false, TextAlign::Center, false, true);
-        DrawText(c, fonts_, L"暂无待完成事项", Rect(content.x, cy + S(38), content.w, S(26)), p.text,
-                 S(13), true, TextAlign::Center);
-        DrawText(c, fonts_, L"添加一条，让今天更有条理", Rect(content.x, cy + S(62), content.w, S(22)),
-                 p.subtext, S(11), false, TextAlign::Center);
+        DrawText(c, fonts_, L"暂无待完成事项", Rect(content.x, cy + S(40), content.w, S(28)), p.text,
+                 S(14), true, TextAlign::Center);
+        DrawText(c, fonts_, L"添加一条，让今天更有条理", Rect(content.x, cy + S(66), content.w, S(24)),
+                 p.subtext, S(12), false, TextAlign::Center);
         Button(c, fonts_, layout_.emptyAdd, L"添加任务", true, hoverControl_ == C_EMPTY_ADD, p,
-               S(8), S(12.5f));
+               S(9), S(13));
         DrawFooter(c, p);
         return;
     }
@@ -680,9 +680,9 @@ void App::DrawPanelList(Canvas& c, const Palette& p) {
                          hoverControl_ == C_EDIT);
         bool exam = t->kind == L"exam";
         Color accentColor = exam ? p.exam : p.accent;
-        if (rowHover) FillRound(c, hit.row.Inflate(-S(4)), S(10), p.hover);
+        if (rowHover) FillRound(c, hit.row.Inflate(-S(5)), S(12), p.hover);
         if (exam) {
-            FillRound(c, Rect(hit.row.x + S(5), hit.row.y + S(9), S(2), hit.row.h - S(18)),
+            FillRound(c, Rect(hit.row.x + S(5), hit.row.y + S(11), S(2), hit.row.h - S(22)),
                       S(1), Color(190, p.exam.GetR(), p.exam.GetG(), p.exam.GetB()));
         }
 
@@ -700,24 +700,24 @@ void App::DrawPanelList(Canvas& c, const Palette& p) {
         if (rowHover || completeT > 0)
             DrawText(c, fonts_, L"\xE73E",
                      Rect(hit.checkbox.x + S(3), hit.checkbox.y + S(3), S(14), S(14)),
-                     accentColor, S(10), false, TextAlign::Center, false, true);
+                     accentColor, S(11), false, TextAlign::Center, false, true);
 
-        float textX = hit.checkbox.x + S(28);
-        float textRight = hit.edit.x - S(8);
-        float dayW = S(48);
+        float textX = hit.checkbox.x + S(30);
+        float textRight = hit.edit.x - S(10);
+        float dayW = S(54);
         float textW = textRight - textX - dayW - S(8);
         int titleAlpha = (int)(255.0f * (1.0f - 0.35f * completeT));
         Color titleColor((BYTE)titleAlpha, p.text.GetR(), p.text.GetG(), p.text.GetB());
-        DrawText(c, fonts_, t->title, Rect(textX, hit.row.y + S(5), textW, S(22)), titleColor,
-                 S(13), false, TextAlign::Left);
+        DrawText(c, fonts_, t->title, Rect(textX, hit.row.y + S(8), textW, S(26)), titleColor,
+                 S(14), false, TextAlign::Left);
 
         Color editColor = rowHover ? p.accent
                                    : Color(80, p.faint.GetR(), p.faint.GetG(), p.faint.GetB());
         if (rowHover && hoverControl_ == C_EDIT) {
-            FillRound(c, hit.edit, S(7), p.cyanSoft);
+            FillRound(c, hit.edit, S(8), p.cyanSoft);
             editColor = p.accent;
         }
-        DrawText(c, fonts_, L"\xE70F", hit.edit, editColor, S(13), false, TextAlign::Center, false,
+        DrawText(c, fonts_, L"\xE70F", hit.edit, editColor, S(14), false, TextAlign::Center, false,
                  true);
 
         DueTone tone = DueTone::Normal;
@@ -729,47 +729,46 @@ void App::DrawPanelList(Canvas& c, const Palette& p) {
         bool isToday = diff == 0;
         std::wstring big = isToday ? L"今天" : Format(L"%lld", (long long)diff);
         std::wstring unit = isToday ? L"" : L"天";
-        float bigSize = isToday ? S(14) : S(18);
-        float unitSize = S(9.5f);
+        float bigSize = isToday ? S(15) : S(20);
+        float unitSize = S(10);
         float bigW = MeasureText(fonts_, big, bigSize);
         float unitW = unit.empty() ? 0.0f : MeasureText(fonts_, unit, unitSize);
         float gap = unit.empty() ? 0.0f : S(2);
         float blockX = textRight - bigW - gap - unitW;
-        DrawText(c, fonts_, big, Rect(blockX, hit.row.y + S(2), bigW + S(2), S(30)), toneColor,
+        DrawText(c, fonts_, big, Rect(blockX, hit.row.y + S(3), bigW + S(2), S(32)), toneColor,
                  bigSize, true, TextAlign::Left);
         if (!unit.empty())
             DrawText(c, fonts_, unit,
-                     Rect(blockX + bigW + gap, hit.row.y + S(12), unitW + S(2), S(20)),
+                     Rect(blockX + bigW + gap, hit.row.y + S(14), unitW + S(2), S(20)),
                      toneColor, unitSize, true, TextAlign::Left);
 
         float lineX = textX;
-        float lineY = hit.row.y + S(28);
+        float lineY = hit.row.y + S(33);
         if (exam) {
             const std::wstring mark = L"考试 · ";
-            float markW = MeasureText(fonts_, mark, S(10));
-            DrawText(c, fonts_, mark, Rect(lineX, lineY, markW + S(4), S(18)), p.exam, S(10));
+            float markW = MeasureText(fonts_, mark, S(11));
+            DrawText(c, fonts_, mark, Rect(lineX, lineY, markW + S(4), S(18)), p.exam, S(11));
             lineX += markW;
         }
         std::wstring dateText = L"截止 " + FormatMMDD(t->dueDay);
-        float dateW = MeasureText(fonts_, dateText, S(10.5f));
-        DrawText(c, fonts_, dateText, Rect(lineX, lineY, dateW + S(4), S(18)), p.subtext,
-                 S(10.5f));
+        float dateW = MeasureText(fonts_, dateText, S(11));
+        DrawText(c, fonts_, dateText, Rect(lineX, lineY, dateW + S(4), S(18)), p.subtext, S(11));
         if (!t->repeat.empty()) {
             float rx = lineX + dateW + S(8);
-            if (rx + S(38) <= textRight) {
-                DrawText(c, fonts_, L"\xE8EE", Rect(rx, lineY - S(1), S(13), S(18)), p.accent,
-                         S(9.5f), false, TextAlign::Center, false, true);
+            if (rx + S(40) <= textRight) {
+                DrawText(c, fonts_, L"\xE8EE", Rect(rx, lineY - S(1), S(14), S(18)), p.accent,
+                         S(10), false, TextAlign::Center, false, true);
                 DrawText(c, fonts_, RepeatShort(t->repeat),
-                         Rect(rx + S(14), lineY, S(32), S(18)), p.accent, S(9.5f), true);
+                         Rect(rx + S(15), lineY, S(34), S(18)), p.accent, S(10), true);
             }
         }
         if (completeT > 0) {
-            float titleW = std::min(MeasureText(fonts_, t->title, S(13)), textW);
-            float lineY2 = hit.row.y + S(16);
-            DrawLine(c, textX, lineY2, textX + titleW * completeT, lineY2, p.subtext, S(1.2f));
+            float titleW = std::min(MeasureText(fonts_, t->title, S(14)), textW);
+            float lineY2 = hit.row.y + S(19);
+            DrawLine(c, textX, lineY2, textX + titleW * completeT, lineY2, p.subtext, S(1.3f));
         }
         if (i + 1 < todo.size()) {
-            DrawLine(c, textX, hit.row.y + hit.row.h, hit.row.x + hit.row.w - S(12),
+            DrawLine(c, textX, hit.row.y + hit.row.h, hit.row.x + hit.row.w - S(14),
                      hit.row.y + hit.row.h,
                      Color(120, p.divider.GetR(), p.divider.GetG(), p.divider.GetB()), 1.0f);
         }
@@ -791,16 +790,16 @@ void App::DrawPanelForm(Canvas& c, const Palette& p) {
     Rect card = layout_.card;
     bool exam = formKind_ == L"exam";
     IconButton(c, fonts_, layout_.btnBack, L"\xE72B", hoverControl_ == C_BACK, p.subtext, p.cyanSoft,
-               S(16));
+               S(18));
     DrawText(c, fonts_,
              formEditing_ ? (exam ? L"编辑考试" : L"编辑作业")
                           : (exam ? L"新增考试" : L"新增作业"),
-             Rect(card.x + S(54), card.y + S(12), card.w - S(72), S(30)), p.text, S(15), true);
-    DrawLine(c, card.x + S(18), card.y + S(55), card.x + card.w - S(18), card.y + S(55), p.divider,
+             Rect(card.x + S(56), card.y + S(14), card.w - S(76), S(34)), p.text, S(16), true);
+    DrawLine(c, card.x + S(20), card.y + S(59), card.x + card.w - S(20), card.y + S(59), p.divider,
              1.0f);
 
     DrawText(c, fonts_, exam ? L"考试名称" : L"作业标题",
-             Rect(card.x + S(20), card.y + S(64), card.w - S(160), S(18)), p.subtext, S(11));
+             Rect(card.x + S(22), card.y + S(72), card.w - S(170), S(20)), p.subtext, S(12));
 
     Rect typeGroup(layout_.typeHomework.x - S(2), layout_.typeHomework.y - S(2),
                    layout_.typeExam.x + layout_.typeExam.w - layout_.typeHomework.x + S(4),
@@ -815,7 +814,7 @@ void App::DrawPanelForm(Canvas& c, const Palette& p) {
         } else if (hoverControl_ == control) {
             FillRound(c, r, S(7), p.hover);
         }
-        DrawText(c, fonts_, text, r, active ? accent : p.subtext, S(10.5f), active,
+        DrawText(c, fonts_, text, r, active ? accent : p.subtext, S(11.5f), active,
                  TextAlign::Center);
     };
     drawType(layout_.typeHomework, L"作业", !exam, false, C_TYPE_HOMEWORK);
@@ -830,7 +829,7 @@ void App::DrawPanelForm(Canvas& c, const Palette& p) {
                           (exam ? p.exam : p.accent).GetG(),
                           (exam ? p.exam : p.accent).GetB()), 1.3f);
 
-    float fontPx = S(13.5f);
+    float fontPx = S(14.5f);
     float innerW = field.w - S(32);
     std::wstring prefix = formTitle_.substr(0, (size_t)std::min<int>(caret_, (int)formTitle_.size()));
     float prefixW = MeasureText(fonts_, prefix, fontPx);
@@ -862,9 +861,9 @@ void App::DrawPanelForm(Canvas& c, const Palette& p) {
     c.g().ResetClip();
 
     DrawText(c, fonts_, L"截止日期",
-             Rect(card.x + S(20), card.y + S(136), card.w - S(40), S(18)), p.subtext, S(11));
+             Rect(card.x + S(22), card.y + S(150), card.w - S(44), S(20)), p.subtext, S(12));
 
-    Rect dateRow(layout_.dateValue.x, layout_.dateValue.y, layout_.dateValue.w + S(76),
+    Rect dateRow(layout_.dateValue.x, layout_.dateValue.y, layout_.dateValue.w + S(80),
                  layout_.dateValue.h);
     FillRound(c, dateRow, S(10), p.field);
     StrokeRound(c, dateRow, S(10),
@@ -874,14 +873,14 @@ void App::DrawPanelForm(Canvas& c, const Palette& p) {
                 1.0f);
     DrawText(c, fonts_, L"\xE787",
              Rect(dateRow.x + S(14), dateRow.y, S(20), dateRow.h),
-             hoverControl_ == C_DATE_FIELD ? p.accent : p.faint, S(14), false, TextAlign::Center,
+             hoverControl_ == C_DATE_FIELD ? p.accent : p.faint, S(15), false, TextAlign::Center,
              false, true);
 
     std::wstring dateText = FormatFullDate(formDue_) + L" · " + WeekdayCN(formDue_);
     if (formDue_ == TodayLocalDay()) dateText += L"（今天）";
     DrawText(c, fonts_, dateText,
-             Rect(dateRow.x + S(40), dateRow.y, layout_.dateValue.w - S(54), dateRow.h),
-             p.text, S(12));
+             Rect(dateRow.x + S(42), dateRow.y, layout_.dateValue.w - S(56), dateRow.h),
+             p.text, S(13));
 
     if (hoverControl_ == C_DATE_MINUS) FillRound(c, layout_.dateMinus, S(7), p.cyanSoft);
     if (hoverControl_ == C_DATE_PLUS) FillRound(c, layout_.datePlus, S(7), p.cyanSoft);
@@ -900,74 +899,74 @@ void App::DrawPanelForm(Canvas& c, const Palette& p) {
         Color bg = active ? p.accentSoft : p.field;
         Color fg = active ? p.accent : p.subtext;
         if (hoverControl_ == control) bg = active ? p.accentSoft : p.hover;
-        FillRound(c, r, S(8), bg);
-        DrawText(c, fonts_, text, r, fg, S(11), active, TextAlign::Center);
+        FillRound(c, r, S(9), bg);
+        DrawText(c, fonts_, text, r, fg, S(12), active, TextAlign::Center);
     };
     drawChip(layout_.chipToday, L"今天", formDue_ == today, C_CHIP_TODAY);
     drawChip(layout_.chipTomorrow, L"明天", formDue_ == today + 1, C_CHIP_TOMORROW);
     drawChip(layout_.chipWeek, L"一周后", formDue_ == today + 7, C_CHIP_WEEK);
 
     Rect repeat = layout_.repeatField;
-    DrawText(c, fonts_, L"重复", Rect(card.x + S(20), repeat.y, S(38), repeat.h), p.subtext,
-             S(10.5f));
-    FillRound(c, repeat, S(8), p.field);
-    StrokeRound(c, repeat, S(8), exam ? p.divider : p.border, 1.0f);
+    DrawText(c, fonts_, L"重复", Rect(card.x + S(22), repeat.y, S(40), repeat.h), p.subtext,
+             S(11.5f));
+    FillRound(c, repeat, S(9), p.field);
+    StrokeRound(c, repeat, S(9), exam ? p.divider : p.border, 1.0f);
     if (exam) {
         DrawText(c, fonts_, L"考试不重复",
-                 Rect(repeat.x + S(12), repeat.y, repeat.w - S(24), repeat.h), p.faint, S(11));
+                 Rect(repeat.x + S(14), repeat.y, repeat.w - S(28), repeat.h), p.faint, S(12));
     } else {
         std::wstring repeatText = RepeatShort(formRepeat_);
         if (formRepeat_ == L"weekly") repeatText = L"每" + WeekdayCN(formDue_);
         DrawText(c, fonts_, repeatText,
-                 Rect(repeat.x + S(12), repeat.y, repeat.w - S(34), repeat.h), p.text, S(11));
+                 Rect(repeat.x + S(14), repeat.y, repeat.w - S(38), repeat.h), p.text, S(12));
         DrawText(c, fonts_, L"\xE8EE",
-                 Rect(repeat.x + repeat.w - S(24), repeat.y, S(16), repeat.h), p.faint, S(10),
+                 Rect(repeat.x + repeat.w - S(26), repeat.y, S(18), repeat.h), p.faint, S(11),
                  false, TextAlign::Center, false, true);
     }
 
     if (!formError_.empty()) {
         DrawText(c, fonts_, formError_,
-                 Rect(card.x + S(20), card.y + S(288), card.w - S(40), S(20)), p.overdue,
-                 S(10.5f));
+                 Rect(card.x + S(22), card.y + S(324), card.w - S(44), S(22)), p.overdue,
+                 S(11.5f));
     } else {
         DrawText(c, fonts_,
                  exam ? L"考试单独标记颜色，完成后进入归档"
                       : (formRepeat_.empty() ? L"仅按自然日计算，不设置具体时间"
                                              : L"完成后自动生成下一次"),
-                 Rect(card.x + S(20), card.y + S(288), card.w - S(40), S(20)), p.faint,
-                 S(10.5f));
+                 Rect(card.x + S(22), card.y + S(324), card.w - S(44), S(22)), p.faint,
+                 S(11.5f));
     }
 
-    Button(c, fonts_, layout_.btnSave, L"保存", true, hoverControl_ == C_SAVE, p, S(8), S(12.5f));
-    Button(c, fonts_, layout_.btnCancel, L"取消", false, hoverControl_ == C_CANCEL, p, S(8),
-           S(12.5f));
+    Button(c, fonts_, layout_.btnSave, L"保存", true, hoverControl_ == C_SAVE, p, S(9), S(13));
+    Button(c, fonts_, layout_.btnCancel, L"取消", false, hoverControl_ == C_CANCEL, p, S(9),
+           S(13));
 }
 
 void App::DrawPanelDatePicker(Canvas& c, const Palette& p) {
     Rect card = layout_.card;
     IconButton(c, fonts_, layout_.btnBack, L"\xE72B", hoverControl_ == C_BACK, p.subtext, p.cyanSoft,
-               S(16));
+               S(18));
     DrawText(c, fonts_, L"选择截止日期",
-             Rect(card.x + S(54), card.y + S(12), card.w - S(72), S(30)), p.text, S(15), true);
-    DrawLine(c, card.x + S(18), card.y + S(55), card.x + card.w - S(18), card.y + S(55), p.divider,
+             Rect(card.x + S(56), card.y + S(14), card.w - S(76), S(34)), p.text, S(16), true);
+    DrawLine(c, card.x + S(20), card.y + S(59), card.x + card.w - S(20), card.y + S(59), p.divider,
              1.0f);
 
-    if (hoverControl_ == C_CAL_PREV) FillRound(c, layout_.calPrev, S(8), p.cyanSoft);
-    if (hoverControl_ == C_CAL_NEXT) FillRound(c, layout_.calNext, S(8), p.cyanSoft);
-    DrawText(c, fonts_, L"\xE76B", layout_.calPrev, p.subtext, S(12), false, TextAlign::Center,
+    if (hoverControl_ == C_CAL_PREV) FillRound(c, layout_.calPrev, S(9), p.cyanSoft);
+    if (hoverControl_ == C_CAL_NEXT) FillRound(c, layout_.calNext, S(9), p.cyanSoft);
+    DrawText(c, fonts_, L"\xE76B", layout_.calPrev, p.subtext, S(13), false, TextAlign::Center,
              false, true);
-    DrawText(c, fonts_, L"\xE76C", layout_.calNext, p.subtext, S(12), false, TextAlign::Center,
+    DrawText(c, fonts_, L"\xE76C", layout_.calNext, p.subtext, S(13), false, TextAlign::Center,
              false, true);
     DrawText(c, fonts_, Format(L"%d 年 %d 月", calYear_, calMonth_), layout_.calTitle, p.text,
-             S(13.5f), true, TextAlign::Center);
+             S(14.5f), true, TextAlign::Center);
 
     const wchar_t* weekdays[] = {L"一", L"二", L"三", L"四", L"五", L"六", L"日"};
-    float gridX = layout_.calendarDays.empty() ? card.x + S(28) : layout_.calendarDays[0].second.x;
-    float gridY = layout_.calendarDays.empty() ? card.y + S(126) : layout_.calendarDays[0].second.y;
-    float cellW = layout_.calendarDays.empty() ? S(40) : layout_.calendarDays[0].second.w;
+    float gridX = layout_.calendarDays.empty() ? card.x + S(30) : layout_.calendarDays[0].second.x;
+    float gridY = layout_.calendarDays.empty() ? card.y + S(132) : layout_.calendarDays[0].second.y;
+    float cellW = layout_.calendarDays.empty() ? S(42) : layout_.calendarDays[0].second.w;
     for (int i = 0; i < 7; ++i) {
-        DrawText(c, fonts_, weekdays[i], Rect(gridX + i * cellW, gridY - S(24), cellW, S(20)),
-                 p.faint, S(10), false, TextAlign::Center);
+        DrawText(c, fonts_, weekdays[i], Rect(gridX + i * cellW, gridY - S(26), cellW, S(22)),
+                 p.faint, S(10.5f), false, TextAlign::Center);
     }
 
     int64_t today = TodayLocalDay();
@@ -980,15 +979,15 @@ void App::DrawPanelDatePicker(Canvas& c, const Palette& p) {
                        hoverTaskId_ == std::to_wstring(cell.first);
         float cx = cell.second.centerX();
         float cy = cell.second.centerY();
-        float radius = S(15);
+        float radius = S(17);
         if (hovered && !selected) FillCircle(c, cx, cy, radius, p.hover);
         if (selected) {
             FillCircle(c, cx, cy, radius, p.accent);
         } else if (cell.first == today) {
             DrawText(c, fonts_, std::to_wstring(d),
                      Rect(cell.second.x, cell.second.y, cell.second.w, cell.second.h - S(4)),
-                     p.accent, S(11.5f), true, TextAlign::Center);
-            FillCircle(c, cx, cell.second.y + cell.second.h - S(5), S(1.5f), p.accent);
+                     p.accent, S(12.5f), true, TextAlign::Center);
+            FillCircle(c, cx, cell.second.y + cell.second.h - S(6), S(1.5f), p.accent);
             continue;
         }
         Color fg = selected ? p.cardSolid
@@ -996,43 +995,43 @@ void App::DrawPanelDatePicker(Canvas& c, const Palette& p) {
                                        : Color(110, p.faint.GetR(), p.faint.GetG(),
                                                p.faint.GetB()));
         DrawText(c, fonts_, std::to_wstring(d),
-                 Rect(cell.second.x, cell.second.y, cell.second.w, cell.second.h), fg, S(11.5f),
+                 Rect(cell.second.x, cell.second.y, cell.second.w, cell.second.h), fg, S(12.5f),
                  selected, TextAlign::Center);
     }
 
-    Button(c, fonts_, layout_.calToday, L"今天", true, hoverControl_ == C_CAL_TODAY, p, S(8),
-           S(12.5f));
-    Button(c, fonts_, layout_.calCancel, L"取消", false, hoverControl_ == C_CAL_CANCEL, p, S(8),
-           S(12.5f));
+    Button(c, fonts_, layout_.calToday, L"今天", true, hoverControl_ == C_CAL_TODAY, p, S(9),
+           S(13));
+    Button(c, fonts_, layout_.calCancel, L"取消", false, hoverControl_ == C_CAL_CANCEL, p, S(9),
+           S(13));
 }
 
 void App::DrawPanelArchive(Canvas& c, const Palette& p) {
     Rect card = layout_.card;
     IconButton(c, fonts_, layout_.btnBack, L"\xE72B", hoverControl_ == C_BACK, p.subtext, p.cyanSoft,
-               S(16));
+               S(18));
     auto archive = SortedArchive();
     std::wstring title = archive.empty() ? L"归档" : Format(L"归档 · %d", (int)archive.size());
-    DrawText(c, fonts_, title, Rect(card.x + S(54), card.y + S(12), card.w - S(160), S(30)),
-             p.text, S(15), true);
+    DrawText(c, fonts_, title, Rect(card.x + S(56), card.y + S(14), card.w - S(170), S(34)),
+             p.text, S(16), true);
     if (!archive.empty()) {
         if (hoverControl_ == C_CLEAR_ARCHIVE) {
-            FillRound(c, layout_.btnClear, S(8), p.closeHover);
+            FillRound(c, layout_.btnClear, S(9), p.closeHover);
         }
-        DrawText(c, fonts_, L"清空", layout_.btnClear, p.overdue, S(11.5f), false,
+        DrawText(c, fonts_, L"清空", layout_.btnClear, p.overdue, S(12), false,
                  TextAlign::Center);
     }
-    DrawLine(c, card.x + S(18), card.y + S(55), card.x + card.w - S(18), card.y + S(55),
+    DrawLine(c, card.x + S(20), card.y + S(59), card.x + card.w - S(20), card.y + S(59),
              p.divider, 1.0f);
 
     if (archive.empty()) {
         Rect content = layout_.content;
         float cx = content.centerX();
         float cy = content.y + content.h * 0.40f;
-        FillCircle(c, cx, cy, S(26), p.cyanSoft);
-        DrawText(c, fonts_, L"\xE7B8", Rect(cx - S(18), cy - S(18), S(36), S(36)), p.accent, S(22),
+        FillCircle(c, cx, cy, S(28), p.cyanSoft);
+        DrawText(c, fonts_, L"\xE7B8", Rect(cx - S(18), cy - S(18), S(36), S(36)), p.accent, S(23),
                  false, TextAlign::Center, false, true);
-        DrawText(c, fonts_, L"暂无归档作业", Rect(content.x, cy + S(38), content.w, S(26)), p.text,
-                 S(13), true, TextAlign::Center);
+        DrawText(c, fonts_, L"暂无归档作业", Rect(content.x, cy + S(40), content.w, S(28)), p.text,
+                 S(14), true, TextAlign::Center);
         return;
     }
 
@@ -1046,28 +1045,28 @@ void App::DrawPanelArchive(Canvas& c, const Palette& p) {
             continue;
         bool hover = hoverTaskId_ == t->id;
         bool exam = t->kind == L"exam";
-        if (hover) FillRound(c, hit.row.Inflate(-S(4)), S(10), p.hover);
+        if (hover) FillRound(c, hit.row.Inflate(-S(5)), S(12), p.hover);
         if (exam)
-            FillRound(c, Rect(hit.row.x + S(5), hit.row.y + S(9), S(2), hit.row.h - S(18)),
+            FillRound(c, Rect(hit.row.x + S(5), hit.row.y + S(11), S(2), hit.row.h - S(22)),
                       S(1), Color(180, p.exam.GetR(), p.exam.GetG(), p.exam.GetB()));
-        float textX = hit.row.x + S(14);
-        DrawText(c, fonts_, t->title, Rect(textX, hit.row.y + S(7), hit.row.w - S(90), S(22)),
-                 p.text, S(13));
+        float textX = hit.row.x + S(16);
+        DrawText(c, fonts_, t->title, Rect(textX, hit.row.y + S(9), hit.row.w - S(96), S(24)),
+                 p.text, S(14));
         DrawText(c, fonts_, (exam ? L"考试 · " : L"") + CompletedLabel(t->completedAt),
-                 Rect(textX, hit.row.y + S(29), hit.row.w - S(90), S(18)),
-                 exam ? p.exam : p.subtext, S(10.5f));
+                 Rect(textX, hit.row.y + S(34), hit.row.w - S(96), S(20)),
+                 exam ? p.exam : p.subtext, S(11));
         if (hoverControl_ == C_RESTORE && hoverTaskId_ == t->id)
-            FillRound(c, hit.action1, S(7), p.cyanSoft);
+            FillRound(c, hit.action1, S(8), p.cyanSoft);
         if (hoverControl_ == C_DELETE && hoverTaskId_ == t->id)
-            FillRound(c, hit.action2, S(7), p.closeHover);
+            FillRound(c, hit.action2, S(8), p.closeHover);
         DrawText(c, fonts_, L"\xE7A7",
-                 Rect(hit.action1.x + S(4), hit.action1.y + S(4), S(20), S(20)), p.subtext, S(13),
+                 Rect(hit.action1.x + S(4), hit.action1.y + S(4), S(20), S(20)), p.subtext, S(14),
                  false, TextAlign::Center, false, true);
         DrawText(c, fonts_, L"\xE74D",
-                 Rect(hit.action2.x + S(4), hit.action2.y + S(4), S(20), S(20)), p.overdue, S(13),
+                 Rect(hit.action2.x + S(4), hit.action2.y + S(4), S(20), S(20)), p.overdue, S(14),
                  false, TextAlign::Center, false, true);
         if (i + 1 < archive.size())
-            DrawLine(c, textX, hit.row.y + hit.row.h, hit.row.x + hit.row.w - S(12),
+            DrawLine(c, textX, hit.row.y + hit.row.h, hit.row.x + hit.row.w - S(14),
                      hit.row.y + hit.row.h,
                      Color(120, p.divider.GetR(), p.divider.GetG(), p.divider.GetB()), 1.0f);
     }
@@ -1086,10 +1085,10 @@ void App::DrawPanelArchive(Canvas& c, const Palette& p) {
 void App::DrawPanelSettings(Canvas& c, const Palette& p) {
     Rect card = layout_.card;
     IconButton(c, fonts_, layout_.btnBack, L"\xE72B", hoverControl_ == C_BACK, p.subtext, p.cyanSoft,
-               S(16));
-    DrawText(c, fonts_, L"设置", Rect(card.x + S(54), card.y + S(12), card.w - S(72), S(30)),
-             p.text, S(15), true);
-    DrawLine(c, card.x + S(18), card.y + S(55), card.x + card.w - S(18), card.y + S(55),
+               S(18));
+    DrawText(c, fonts_, L"设置", Rect(card.x + S(56), card.y + S(14), card.w - S(76), S(34)),
+             p.text, S(16), true);
+    DrawLine(c, card.x + S(20), card.y + S(59), card.x + card.w - S(20), card.y + S(59),
              p.divider, 1.0f);
 
     int archiveCount = (int)SortedArchive().size();
@@ -1110,7 +1109,7 @@ void App::DrawPanelSettings(Canvas& c, const Palette& p) {
                      (hoverControl_ == C_SETTING || hoverControl_ == C_SLIDER);
         if (hover) FillRound(c, Rect(r.x + S(2), r.y, r.w - S(4), r.h), S(8), p.hover);
         DrawText(c, fonts_, SettingLabel(index),
-                 Rect(r.x + S(12), r.y, r.w - S(180), r.h), p.text, S(12));
+                 Rect(r.x + S(14), r.y, r.w - S(190), r.h), p.text, S(12.5f));
 
         std::wstring value = SettingValue(settings_, lastBackup_, archiveCount, index);
         if (IsToggleSetting(index)) {
@@ -1127,16 +1126,16 @@ void App::DrawPanelSettings(Canvas& c, const Palette& p) {
         } else if (IsDropdownSetting(index)) {
             Rect ctrl = valueRect(index);
             bool open = settingsDropdown_ == index;
-            FillRound(c, ctrl, S(8), p.field);
-            StrokeRound(c, ctrl, S(8),
+            FillRound(c, ctrl, S(9), p.field);
+            StrokeRound(c, ctrl, S(9),
                         open || (hover && hoverControl_ == C_SETTING)
                             ? Color(180, p.accent.GetR(), p.accent.GetG(), p.accent.GetB())
                             : p.border,
                         open ? 1.3f : 1.0f);
-            DrawText(c, fonts_, value, Rect(ctrl.x + S(10), ctrl.y, ctrl.w - S(32), ctrl.h),
-                     p.text, S(11));
+            DrawText(c, fonts_, value, Rect(ctrl.x + S(12), ctrl.y, ctrl.w - S(34), ctrl.h),
+                     p.text, S(11.5f));
             DrawText(c, fonts_, open ? L"\xE70E" : L"\xE70D",
-                     Rect(ctrl.x + ctrl.w - S(26), ctrl.y, S(18), ctrl.h), p.subtext, S(9), false,
+                     Rect(ctrl.x + ctrl.w - S(28), ctrl.y, S(20), ctrl.h), p.subtext, S(10), false,
                      TextAlign::Center, false, true);
         } else if (IsSliderSetting(index)) {
             Rect track = valueRect(index);
@@ -1154,17 +1153,17 @@ void App::DrawPanelSettings(Canvas& c, const Palette& p) {
             StrokeRound(c, Rect(thumbX - S(6), track.centerY() - S(6), S(12), S(12)), S(6),
                         p.accent, 1.6f);
             DrawText(c, fonts_, value,
-                     Rect(r.x + r.w - S(56), r.y, S(44), r.h), p.subtext, S(10.5f), false,
+                     Rect(r.x + r.w - S(60), r.y, S(48), r.h), p.subtext, S(11), false,
                      TextAlign::Right);
         } else {
             bool action = index >= 11;
             Color valueColor = action ? p.accent : p.subtext;
             DrawText(c, fonts_, value,
-                     Rect(r.x + r.w - S(154), r.y, S(126), r.h), valueColor, S(11), false,
+                     Rect(r.x + r.w - S(164), r.y, S(136), r.h), valueColor, S(11.5f), false,
                      TextAlign::Right);
             if (index >= 12 && index <= 13)
                 DrawText(c, fonts_, L"\xE76C",
-                         Rect(r.x + r.w - S(24), r.y, S(14), r.h), p.faint, S(9), false,
+                         Rect(r.x + r.w - S(26), r.y, S(16), r.h), p.faint, S(10), false,
                          TextAlign::Center, false, true);
         }
         if (index + 1 < kSettingCount)
@@ -1190,11 +1189,11 @@ void App::DrawPanelSettings(Canvas& c, const Palette& p) {
             if (optHover) FillRound(c, opt, S(7), p.hover);
             if (k == current)
                 DrawText(c, fonts_, L"\xE73E",
-                         Rect(opt.x + S(7), opt.y, S(16), opt.h), p.accent, S(10), false,
+                         Rect(opt.x + S(8), opt.y, S(18), opt.h), p.accent, S(11), false,
                          TextAlign::Center, false, true);
             if (k >= 0 && k < (int)options.size())
                 DrawText(c, fonts_, options[(size_t)k],
-                         Rect(opt.x + S(28), opt.y, opt.w - S(34), opt.h), p.text, S(11));
+                         Rect(opt.x + S(30), opt.y, opt.w - S(36), opt.h), p.text, S(12));
         }
     }
 
@@ -1211,15 +1210,15 @@ void App::DrawPanelSettings(Canvas& c, const Palette& p) {
 
 void App::DrawToast(Canvas& c, const Palette& p) {
     if (toast_.empty() || NowMs() > toastUntil_) return;
-    float textW = MeasureText(fonts_, toast_, S(11));
-    float width = std::min(textW + S(50), layout_.card.w - S(40));
-    Rect r(layout_.card.centerX() - width / 2, layout_.card.y + layout_.card.h - S(92), width,
-           S(32));
+    float textW = MeasureText(fonts_, toast_, S(12));
+    float width = std::min(textW + S(54), layout_.card.w - S(40));
+    Rect r(layout_.card.centerX() - width / 2, layout_.card.y + layout_.card.h - S(96), width,
+           S(36));
     FillRound(c, r, r.h / 2, p.toast);
     StrokeRound(c, r, r.h / 2, Color(80, p.accent.GetR(), p.accent.GetG(), p.accent.GetB()), 1.0f);
-    DrawText(c, fonts_, L"\xE73E", Rect(r.x + S(13), r.y, S(14), r.h), p.accent, S(10), false,
+    DrawText(c, fonts_, L"\xE73E", Rect(r.x + S(14), r.y, S(16), r.h), p.accent, S(11), false,
              TextAlign::Center, false, true);
-    DrawText(c, fonts_, toast_, Rect(r.x + S(30), r.y, r.w - S(38), r.h), p.white, S(11), false,
+    DrawText(c, fonts_, toast_, Rect(r.x + S(34), r.y, r.w - S(42), r.h), p.white, S(12), false,
              TextAlign::Left);
 }
 
